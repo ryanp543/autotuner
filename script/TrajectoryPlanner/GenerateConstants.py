@@ -21,7 +21,7 @@ import klampt
 from SuspensionMatrices import Suspension_8legs
 
 # NOTE: Edit for specific robot
-FILEPATH = './agrobot_sim.xml'
+FILEPATH = './robot_sim.xml'
 FILEPATH_CSV = './GenerateGainsConstants.csv'
 
 # Function: Optimization Callback
