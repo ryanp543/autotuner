@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<world>
+  <robot name="agrobot" file="robot_controlsim_v3.urdf" />
+
+</world>

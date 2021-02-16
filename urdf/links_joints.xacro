@@ -1,0 +1,193 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="https://ros.org/wiki/xacro">
+    <!-- Parameters used for spawning the legs of the robot-->
+    <xacro:property name="leg_mass" value="0.215" />
+    <xacro:macro name="default_leg_inertia" >
+        <inertia ixx = "0.000222" ixy="0" ixz="0" iyx = "0" iyy="0.000169" iyz="0" izx="0" izy="0" izz="0.000268" />
+    </xacro:macro>
+    <xacro:property name="leg_visualorigin_rpy" value="1.5708 0 3.1416" />
+    <xacro:property name="leg_collisionbox_x" value="0.056" />
+    <xacro:property name="leg_collisionbox_y" value="0.044" />
+    <xacro:property name="leg_collisionbox_z" value="0.094" />
+    <xacro:macro name="default_leg_collision" >
+        <collision>
+            <geometry>
+                 <box size="${leg_collisionbox_x} ${leg_collisionbox_y} ${leg_collisionbox_z}" />
+            </geometry>
+            <origin rpy="0 0.785 0" xyz="-${leg_collisionbox_x*0.5+0.02385} 0 -${leg_collisionbox_z*0.5-2*0.0147}"/>
+        </collision>
+    </xacro:macro>
+
+    <!-- Template for a leg joint of the rover-->
+    <xacro:macro name="leg_joint" params="name origin_xyz parent child">
+        <joint name="${name}" type="revolute">
+            <axis xyz="0 1 0"/>
+            <limit effort="1000" lower="-3.14" upper="3.14" velocity="1000"/>
+            <origin xyz="${origin_xyz}" rpy="0 0 0" />
+            <parent link="${parent}" />
+            <child link="${child}" />
+        </joint>
+        <transmission name="trans_${name}">
+            <type> transmission_interface/SimpleTransmission </type>
+            <joint name="${name}">
+                <hardwareInterface> hardware_interface/EffortJointInterface </hardwareInterface>
+            </joint>
+            <actuator name="spring_${name}">
+                <hardwareInterface> hardware_interface/EffortJointInterface </hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>                
+            </actuator>
+        </transmission>
+    </xacro:macro>
+
+    <!-- Templates for the leg links of the rover-->
+    <xacro:macro name="leftleg_link" params="name">
+        <link name="${name}">
+            <pose> 0 0 0 0 0 0 </pose>
+            <inertial>
+                <mass value="${leg_mass}" />
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <xacro:default_leg_inertia />
+            </inertial>
+
+            <xacro:default_leg_collision />
+
+            <visual>
+                <origin rpy="${leg_visualorigin_rpy}" xyz="0 0 0" />
+                <geometry>
+                    <mesh filename="package://robot_description/meshes/link_leftleg.STL" scale="0.001 0.001 0.001" />
+                </geometry>
+                <material name="Blue"> 
+                    <color rgba="0 0 1.0 1.0"/> 
+                </material>
+            </visual>
+        </link>
+    </xacro:macro>
+
+    <xacro:macro name="rightleg_link" params="name">
+        <link name="${name}">
+            <pose> 0 0 0 0 0 0 </pose>
+            <inertial>
+                <mass value="${leg_mass}" />
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <xacro:default_leg_inertia />
+            </inertial>
+            
+            <xacro:default_leg_collision />
+            
+            <visual>
+                <origin rpy="${leg_visualorigin_rpy}" xyz="0 0 0" />
+                <geometry>
+                    <mesh filename="package://robot_description/meshes/link_rightleg.STL" scale="0.001 0.001 0.001" />
+                </geometry>
+                <material name="Blue"> 
+                    <color rgba="0 0 1.0 1.0"/> 
+                </material>
+            </visual>
+        </link>
+    </xacro:macro>
+
+    <!-- Template for wheel joints on both sides -->
+    <xacro:property name="wheel_origin_xyz" value="-0.074 0 -0.052" />
+
+    <xacro:macro name="leftwheel_joint" params="name parent child">
+        <joint name="${name}" type="revolute">
+            <axis xyz="0 1 0"/>
+            <!-- Note that we use the limits below to mimic a continuous joint. However, we don't use 
+            the actual existing continous joint class because it DOES NOT support setting instantaneous velocities.
+            See http://gazebosim.org/tutorials?tut=set_velocity&cat=#SettingVelocityonJoints for reference
+            and the video
+            https://www.youtube.com/watch?v=Bb5RZ1PWPXI -->
+            <limit effort="1000000000000000" lower="-1000000000000000000" upper="1000000000000000000" velocity="1000000000000000" />
+            <origin xyz="${wheel_origin_xyz}" rpy="0 0 0" />
+            <parent link="${parent}" />
+            <child link="${child}" />
+        </joint>
+        <transmission name="trans_${name}">
+            <type> transmission_interface/SimpleTransmission </type>
+            <joint name="${name}">
+                <hardwareInterface> hardware_interface/VelocityJointInterface </hardwareInterface>
+            </joint>
+            <actuator name="trackkinconstraint_${name}">
+                <hardwareInterface> hardware_interface/VelocityJointInterface </hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>                
+            </actuator>
+        </transmission>
+    </xacro:macro>
+
+    <xacro:macro name="rightwheel_joint" params="name parent child">
+        <joint name="${name}" type="revolute">
+            <axis xyz="0 1 0"/>
+            <!-- Note that we use the limits below to mimic a continuous joint. However, we don't use 
+            the actual existing continous joint class because it DOES NOT support setting instantaneous velocities.
+            See http://gazebosim.org/tutorials?tut=set_velocity&cat=#SettingVelocityonJoints for reference
+            and the video
+            https://www.youtube.com/watch?v=Bb5RZ1PWPXI -->
+            <limit effort="1000000000000000" lower="-1000000000000000000" upper="1000000000000000000" velocity="1000000000000000" />
+            <origin xyz="${wheel_origin_xyz}" rpy="0 0 0" />
+            <parent link="${parent}" />
+            <child link="${child}" />
+        </joint>
+        <transmission name="trans_${name}">
+            <type> transmission_interface/SimpleTransmission </type>
+            <joint name="${name}">
+                <hardwareInterface> hardware_interface/VelocityJointInterface </hardwareInterface>
+            </joint>
+            <actuator name="trackkinconstraint_${name}">
+                <hardwareInterface> hardware_interface/VelocityJointInterface </hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>                
+            </actuator>
+        </transmission>
+    </xacro:macro>
+
+    <!-- Template for wheel link-->
+    <xacro:property name="wheel_mass" value="0.1" />
+    <xacro:property name="wheel_width" value="0.0381" />
+    <xacro:property name="wheel_radius" value="0.030" />
+    <xacro:macro name="default_wheel_geometry" >
+        <geometry>
+            <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+    </xacro:macro>
+
+    <xacro:macro name="wheel_link" params="name">
+        <link name="${name}">
+            <pose> 0 0 0 0 0 0 </pose>
+            <inertial>
+                <mass value="${wheel_mass}" />
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <inertia ixx = "${0.25*wheel_mass*wheel_radius**2+0.0833*wheel_mass*wheel_width**2}" ixy="0" ixz="0" iyx = "0" iyy="${0.5*wheel_mass*wheel_radius**2}" iyz="0" izx="0" izy="0" izz="${0.25*wheel_mass*wheel_radius**2+0.0833*wheel_mass*wheel_width**2}" />
+            </inertial>
+
+            <collision name="${name}_collision">
+                <origin rpy="1.57 0 0" xyz="0 0 0" />
+                <xacro:default_wheel_geometry />
+                <surface>
+		            <friction>
+		                <ode>
+		                    <mu>0.5</mu> 
+		                    <mu2>0.5</mu2>
+		                </ode>
+		            </friction>
+		            <contact>
+		                <ode>
+		                    <kp>1000000.0</kp>
+		                    <kd>1000000.0</kd>
+		                    <!--<max_vel>0.1</max_vel>-->
+		                    <min_depth>0.0</min_depth>
+		                </ode>
+		            </contact>
+	            </surface>
+            </collision>
+
+            <visual>
+                <origin rpy="1.57 0 0" xyz="0 0 0" />
+                <xacro:default_wheel_geometry />
+                <material name="Green"> 
+                    <color rgba="0 1.0 0 1.0"/> 
+                </material>
+            </visual>
+
+        </link>
+    </xacro:macro>
+
+</robot>

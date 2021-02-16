@@ -1,0 +1,409 @@
+<?xml version="1.0" ?>
+<robot name="ranch_rover" xmlns:xacro="https://ros.org/wiki/xacro">
+    <!-- xacro files to be included-->
+    <xacro:include filename="$(find robot_description)/urdf/links_joints.xacro" />
+
+    <!-- First link of the robot. Corresponds to the robot main frame. -->
+    <link name="link_chassis"> 
+        <pose> 0 0 0 0 0 0 </pose>
+        <inertial>
+            <mass value="17" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <inertia ixx = "0.713" ixy="0" ixz="0" iyx = "0" iyy="0.393" iyz="0" izx="0" izy="0" izz="0.990" />
+        </inertial>
+        <collision>
+            <geometry>
+                <box size="0.501 0.500 0.200" />
+            </geometry>
+            <origin xyz="0 0 0.1" rpy="0 0 0"/>
+        </collision>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://robot_description/meshes/link_chassis.STL" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+    </link>
+
+    <!-- Definition of the manipulator (from Ryan's URDF file)-->
+    <joint name="fixed" type="fixed">
+        <parent link="link_chassis"/>
+        <child link="base_link"/>
+        <origin xyz="0.190 -0.033 0.196" rpy="0 0 3.14159265359" />
+    </joint>
+    <link name="base_link">
+        <inertial>
+            <origin
+            xyz="0.000436171551697616 1.48891690692541E-19 -0.0155275958217516"
+            rpy="0 0 0" />
+        <mass
+            value="0.480002642136441" />
+        <inertia
+            ixx="0.000294919146587454"
+            ixy="-1.65360965693198E-21"
+            ixz="4.14888231933558E-06"
+            iyy="0.000299724079619861"
+            iyz="6.81230173370342E-22"
+            izz="0.000514960431561791" />
+        </inertial>
+        <visual>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/base_link.STL" />
+        </geometry>
+        <material
+            name="">
+            <color
+            rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+        </material>
+        </visual>
+        <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/base_link.STL" />
+        </geometry>
+        </collision>
+    </link>
+
+    <!-- LINK_1 -->
+    <link name="Link_1">
+        <inertial>
+        <origin
+            xyz="2.74225442931497E-06 -0.00353778613018245 0.0515804512927737"
+            rpy="0 0 0" />
+        <mass
+            value="0.507852532624306" />
+        <inertia
+            ixx="0.000305049101665729"
+            ixy="1.46296943748327E-09"
+            ixz="-1.23302173450347E-08"
+            iyy="0.000527056723286848"
+            iyz="4.68473207349431E-06"
+            izz="0.000309137354236652" />
+        </inertial>
+        <visual>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_1.STL" />
+        </geometry>
+        <material
+            name="">
+            <color
+            rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+        </material>
+        </visual>
+        <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_1.STL" />
+        </geometry>
+        </collision>
+    </link>
+    <joint name="Joint_1"
+        type="revolute">
+        <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+        <parent
+        link="base_link" />
+        <child
+        link="Link_1" />
+        <axis
+        xyz="0 0 1" />
+        <limit
+        lower="-3.1415"
+        upper="3.1415"
+        effort="17"
+        velocity="40" />
+        <dynamics
+        friction="0.09"/>
+    </joint>
+    <transmission name="trans_Joint_1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="Joint_1">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_Joint_1">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <!-- LINK_2 -->
+
+    <link name="Link_2">
+        <inertial>
+        <origin
+            xyz="0.058405779904307 2.0203040740352E-08 0.0339456863545732"
+            rpy="0 0 0" />
+        <mass
+            value="0.81308899959476" />
+        <inertia
+            ixx="0.000388392439322651"
+            ixy="-9.54214032854378E-10"
+            ixz="1.27795112061735E-05"
+            iyy="0.00467218660610504"
+            iyz="-8.84832562194152E-11"
+            izz="0.00496730197895087" />
+        </inertial>
+        <visual>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_2.STL" />
+        </geometry>
+        <material
+            name="">
+            <color
+            rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+        </material>
+        </visual>
+        <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_2.STL" />
+        </geometry>
+        </collision>
+    </link>
+    <joint name="Joint_2"
+        type="revolute">
+        <origin
+        xyz="0 -0.019 0.0545"
+        rpy="-1.5707963267949 0 3.14159265358979" />
+        <parent
+        link="Link_1" />
+        <child
+        link="Link_2" />
+        <axis
+        xyz="0 0 1" />
+        <limit
+        lower="-3.1415"
+        upper="0"
+        effort="17"
+        velocity="40" />
+        <dynamics
+        friction="0.09"/>
+    </joint>
+    <transmission name="trans_Joint_2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="Joint_2">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_Joint_2">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <!-- LINK_3 -->
+
+    <link name="Link_3">
+        <inertial>
+        <origin
+            xyz="0.232598222729073 -9.20818372995846E-07 -0.00955342978657184"
+            rpy="0 0 0" />
+        <mass
+            value="0.336944931620173" />
+        <inertia
+            ixx="3.67648841212008E-05"
+            ixy="-9.59389619481419E-11"
+            ixz="-1.81657115526022E-06"
+            iyy="0.00138520509069701"
+            iyz="2.76629218451524E-12"
+            izz="0.00140450563412969" />
+        </inertial>
+        <visual>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_3.STL" />
+        </geometry>
+        <material
+            name="">
+            <color
+            rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+        </material>
+        </visual>
+        <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_3.STL" />
+        </geometry>
+        </collision>
+    </link>
+    <joint name="Joint_3"
+        type="revolute">
+        <origin
+        xyz="0.352 0 0.05275"
+        rpy="0 0 -1.5708" />
+        <parent
+        link="Link_2" />
+        <child
+        link="Link_3" />
+        <axis
+        xyz="0 0 1" />
+        <limit
+        lower="-1.0472"
+        upper="2.6"
+        effort="17"
+        velocity="40" />
+        <dynamics
+        friction="0.09"/>
+    </joint>
+    <transmission name="trans_Joint_3">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="Joint_3">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_Joint_3">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <!-- LINK_4 -->
+
+    <link name="Link_4">
+        <inertial>
+        <origin
+            xyz="0.0322792079054944 0.0215434702240224 1.30818635455249E-05"
+            rpy="0 0 0" />
+        <mass
+            value="0.213921465907275" />
+        <inertia
+            ixx="5.72875335800106E-05"
+            ixy="-2.1737619349779E-09"
+            ixz="-2.22685486617804E-08"
+            iyy="2.96741933821847E-05"
+            iyz="1.83334792134304E-09"
+            izz="6.54238610234211E-05" />
+        </inertial>
+        <visual>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_4.STL" />
+        </geometry>
+        <material
+            name="">
+            <color
+            rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+        </material>
+        </visual>
+        <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="package://robot_description/meshes/Link_4.STL" />
+        </geometry>
+        </collision>
+    </link>
+    <joint name="Joint_4"
+        type="revolute">
+        <origin
+        xyz="0.32 0 0"
+        rpy="0 0 0" />
+        <parent
+        link="Link_3" />
+        <child
+        link="Link_4" />
+        <axis
+        xyz="0 0 1" />
+        <limit
+        lower="-1.571"
+        upper="1.571"
+        effort="2.268"
+        velocity="0.319" />
+        <dynamics
+        friction="0.09"/>
+    </joint>
+    <transmission name="trans_Joint_4">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="Joint_4">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_Joint_4">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    
+    <!-- Revolute hinge joints for the rover legs -->
+    <leg_joint name="joint_leg1" origin_xyz=" 0.260 0.329 -0.036" parent="link_chassis" child="link_leg1" />
+    <leg_joint name="joint_leg2" origin_xyz=" 0.127 0.329 -0.036" parent="link_chassis" child="link_leg2" />
+    <leg_joint name="joint_leg3" origin_xyz="-0.007 0.329 -0.036" parent="link_chassis" child="link_leg3" />
+    <leg_joint name="joint_leg4" origin_xyz="-0.140 0.329 -0.036" parent="link_chassis" child="link_leg4" />
+    <leg_joint name="joint_leg5" origin_xyz="0.260 -0.329 -0.036" parent="link_chassis" child="link_leg5" />
+    <leg_joint name="joint_leg6" origin_xyz="0.127 -0.329 -0.036" parent="link_chassis" child="link_leg6" />
+    <leg_joint name="joint_leg7" origin_xyz="-0.007 -0.329 -0.036" parent="link_chassis" child="link_leg7" />
+    <leg_joint name="joint_leg8" origin_xyz="-0.140 -0.329 -0.036" parent="link_chassis" child="link_leg8" />
+    
+    <!-- Leg links -->
+    <leftleg_link name="link_leg1" />
+    <leftleg_link name="link_leg2" />
+    <leftleg_link name="link_leg3" />
+    <leftleg_link name="link_leg4" />
+    <rightleg_link name="link_leg5" />
+    <rightleg_link name="link_leg6" />
+    <rightleg_link name="link_leg7" />
+    <rightleg_link name="link_leg8" />
+
+    <!-- Wheel joints -->
+    <leftwheel_joint name="joint_wheel1" parent="link_leg1" child="link_wheel1" />
+    <leftwheel_joint name="joint_wheel2" parent="link_leg2" child="link_wheel2" />
+    <leftwheel_joint name="joint_wheel3" parent="link_leg3" child="link_wheel3" />
+    <leftwheel_joint name="joint_wheel4" parent="link_leg4" child="link_wheel4" />
+    <rightwheel_joint name="joint_wheel5" parent="link_leg5" child="link_wheel5" />
+    <rightwheel_joint name="joint_wheel6" parent="link_leg6" child="link_wheel6" />
+    <rightwheel_joint name="joint_wheel7" parent="link_leg7" child="link_wheel7" />
+    <rightwheel_joint name="joint_wheel8" parent="link_leg8" child="link_wheel8" />
+    <!-- Wheel links-->
+    <wheel_link name="link_wheel1" />
+    <wheel_link name="link_wheel2" />
+    <wheel_link name="link_wheel3" />
+    <wheel_link name="link_wheel4" />
+    <wheel_link name="link_wheel5" />
+    <wheel_link name="link_wheel6" />
+    <wheel_link name="link_wheel7" />
+    <wheel_link name="link_wheel8" />
+
+    <!-- Using gazebo plugin for ros control -->
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/robot</robotNamespace>
+        </plugin>
+        <!--
+        <plugin name="set_trackfriction_plugin" filename="libset_trackfriction_plugin.so">
+		    <namespace_model>/robot</namespace_model>
+            <number_of_wheels> 8 </number_of_wheels>
+            <wheel_radius> 0.030 </wheel_radius>
+	    </plugin>
+        -->
+    </gazebo>
+</robot>

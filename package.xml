@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>autotuner</name>
+  <version>0.0.0</version>
+  <description>The autotuner package</description>
+
+  <maintainer email="marc@todo.todo">marc</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <depend> urdf </depend>
+  <depend> controller_manager </depend>
+  <depend> joint_state_controller </depend>
+  <depend> robot_state_publisher </depend>
+  <depend> joint_state_publisher_gui </depend>
+  <depend> gazebo_ros </depend>
+  <depend> roscpp </depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <!-- Note: this export does not seem to work ... -->>
+  <export>
+    <gazebo_ros gazebo_model_path="${prefix}/urdf"/>
+    <gazebo_ros plugin_path="${prefix}/lib" gazebo_media_path="${prefix}" />
+  </export>
+
+</package>
