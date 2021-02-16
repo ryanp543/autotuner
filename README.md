@@ -8,7 +8,7 @@ The files provided in this repository are intended to be placed into a ROS packa
 
 ![alt text](/flowchart.JPG?raw=true)
 
-Steps:
+## Steps for Usage
 
 1. Download Klamp't (Build from source if pip install doesn't work! Follow online instructions.)
 2. Convert xacro to urdf if the file is not urdf already. There have been issues with having STL files under the visual geometry tag, so try to avoid adding STLs. 
@@ -29,7 +29,18 @@ Currently for 3DOF arms:
 9. This generates a trajectory plan in planned_trajectory.csv that can be used when running Gazebo simulations. 
 10. An example of using this .csv file for Gazebo simulations can be seen in run_simulation2.py in the "script" directory.
 
-Citations:
+## Contributors
+
+Marc-Andre Begin and Ryan Poon are the primary contributors of this project.
+
+## Citations:
+
+For extracting dynamics of robotic arm from URDF file:
+Kris Hauser. (2016) Robust Contact Generation for Robot Simulation with Unstructured Meshes. Robotics Research, 114. 
+
+For trajectory optimization and generation of constants necessary for finding PID gains:
+Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 261-272
+
 
 
 
