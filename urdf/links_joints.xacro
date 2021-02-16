@@ -54,7 +54,7 @@
             <visual>
                 <origin rpy="${leg_visualorigin_rpy}" xyz="0 0 0" />
                 <geometry>
-                    <mesh filename="package://robot_description/meshes/link_leftleg.STL" scale="0.001 0.001 0.001" />
+                    <mesh filename="package://autotuner/meshes/link_leftleg.STL" scale="0.001 0.001 0.001" />
                 </geometry>
                 <material name="Blue"> 
                     <color rgba="0 0 1.0 1.0"/> 
@@ -77,7 +77,7 @@
             <visual>
                 <origin rpy="${leg_visualorigin_rpy}" xyz="0 0 0" />
                 <geometry>
-                    <mesh filename="package://robot_description/meshes/link_rightleg.STL" scale="0.001 0.001 0.001" />
+                    <mesh filename="package://autotuner/meshes/link_rightleg.STL" scale="0.001 0.001 0.001" />
                 </geometry>
                 <material name="Blue"> 
                     <color rgba="0 0 1.0 1.0"/> 

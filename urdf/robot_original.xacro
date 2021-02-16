@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <robot name="ranch_rover" xmlns:xacro="https://ros.org/wiki/xacro">
     <!-- xacro files to be included-->
-    <xacro:include filename="$(find robot_description)/urdf/links_joints.xacro" />
+    <xacro:include filename="$(find autotuner)/urdf/links_joints.xacro" />
 
     <!-- First link of the robot. Corresponds to the robot main frame. -->
     <link name="link_chassis"> 
@@ -20,7 +20,7 @@
         <visual>
             <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
-                <mesh filename="package://robot_description/meshes/link_chassis.STL" scale="0.001 0.001 0.001" />
+                <mesh filename="package://autotuner/meshes/link_chassis.STL" scale="0.001 0.001 0.001" />
             </geometry>
         </visual>
     </link>
@@ -52,7 +52,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/base_link.STL" />
+            filename="package://autotuner/meshes/base_link.STL" />
         </geometry>
         <material
             name="">
@@ -66,7 +66,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/base_link.STL" />
+            filename="package://autotuner/meshes/base_link.STL" />
         </geometry>
         </collision>
     </link>
@@ -93,7 +93,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_1.STL" />
+            filename="package://autotuner/meshes/Link_1.STL" />
         </geometry>
         <material
             name="">
@@ -107,7 +107,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_1.STL" />
+            filename="package://autotuner/meshes/Link_1.STL" />
         </geometry>
         </collision>
     </link>
@@ -164,7 +164,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_2.STL" />
+            filename="package://autotuner/meshes/Link_2.STL" />
         </geometry>
         <material
             name="">
@@ -178,7 +178,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_2.STL" />
+            filename="package://autotuner/meshes/Link_2.STL" />
         </geometry>
         </collision>
     </link>
@@ -235,7 +235,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_3.STL" />
+            filename="package://autotuner/meshes/Link_3.STL" />
         </geometry>
         <material
             name="">
@@ -249,7 +249,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_3.STL" />
+            filename="package://autotuner/meshes/Link_3.STL" />
         </geometry>
         </collision>
     </link>
@@ -306,7 +306,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_4.STL" />
+            filename="package://autotuner/meshes/Link_4.STL" />
         </geometry>
         <material
             name="">
@@ -320,7 +320,7 @@
             rpy="0 0 0" />
         <geometry>
             <mesh
-            filename="package://robot_description/meshes/Link_4.STL" />
+            filename="package://autotuner/meshes/Link_4.STL" />
         </geometry>
         </collision>
     </link>

@@ -11,18 +11,18 @@
 
 
     <!-- Defining the robot model -->
-    <param name="robot_description" command="$(find xacro)/xacro '$(find robot_description)/urdf/robot.xacro'"/>
+    <param name="autotuner" command="$(find xacro)/xacro '$(find autotuner)/urdf/robot.xacro'"/>
 
     <arg name="x" default="0" />
     <arg name="y" default="0" />
     <arg name="z" default="0.2" />
 
     <!-- Spawning the model -->
-    <node pkg="gazebo_ros" type="spawn_model" name="robot_description_spawn" output="screen" 
-          args="-urdf -param robot_description -model robot -x $(arg x) -y $(arg y) -z $(arg z)" />
+    <node pkg="gazebo_ros" type="spawn_model" name="autotuner_spawn" output="screen" 
+          args="-urdf -param autotuner -model robot -x $(arg x) -y $(arg y) -z $(arg z)" />
 
     <!-- Loading the controllers -->
-    <rosparam command="load" file="$(find robot_description)/config/joints.yaml" />
+    <rosparam command="load" file="$(find autotuner)/config/joints.yaml" />
     
     <!-- Launch the controllers -->
     <node name="controller_spawner" pkg="controller_manager" type="spawner"
@@ -52,8 +52,8 @@
       --timeout 60">
     </node>
 
-    <node name="robot_track_state_listener" pkg="robot_description" type="get_track_state_client.py" />
-    <node name="robot_arm_state_listener" pkg="robot_description" type="get_arm_state_client.py" />
+    <node name="robot_track_state_listener" pkg="autotuner" type="get_track_state_client.py" />
+    <node name="robot_arm_state_listener" pkg="autotuner" type="get_arm_state_client.py" />
 
   </group>
 </launch>
