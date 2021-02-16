@@ -28,11 +28,13 @@ Note: Running GenerateGainBounds.py with the GenerateGainsConstants.csv open wil
 
 ## Trajectory Planner/Optimizer
 
-Currently for 3DOF arms:
+The trajectory optimizer class can be found in the planner_3D_scipy.py of the /script/TrajectoryPlanner directory. The class and its functions can be imported into any desired Python file. An example of how to use the class can be seen in the main function of planner_3D_scipy.py.
 
-9. If using trajectory planner, run planner_3D_scipy.py from the Trajectory Planner directory after setting final arm orientations in the main function
-10. This generates a trajectory plan in planned_trajectory.csv that can be used when running Gazebo simulations. 
-11. An example of using this .csv file for Gazebo simulations can be seen in run_simulation2.py in the "script" directory.
+For the provided example:
+
+1. If using trajectory planner, run planner_3D_scipy.py from the Trajectory Planner directory after setting final arm orientations in the main function
+2. This generates a trajectory plan in planned_trajectory.csv that can be used when running Gazebo simulations. 
+3. An example of using this .csv file for Gazebo simulations can be seen in run_simulation_2.py in the "script" directory.
 
 ## Provided Example
 
