@@ -1,5 +1,7 @@
 # RaPID Autotuner
 
+## Flexible-Base Manipulator Control Autotuner
+
 Welcome to the RaPID Autotuner! These open-sourced scripts are associated with the following paper: (To be added soon hopefully)
 
 TLDR; This library allows one to take a Unified Robot Description Format (URDF) file and matrices describing the passive suspension as inputs in order to generate PID gains that guarantee stability for robotic arms mounted on flexible bases. 
