@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     # ADD DATA TO CSV FILE
     # Chassis angle data
-    filepath = './src/robot_description/script/SimulationData/BothData/sim_data_chassis.csv'
+    filepath = './src/autotuner/script/SimulationData/BothData/sim_data_chassis.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             qC_p_set.append(data[row+2][:])
 
     # Joint 1 data
-    filepath = './src/robot_description/script/SimulationData/BothData/sim_data_joint1.csv'
+    filepath = './src/autotuner/script/SimulationData/BothData/sim_data_joint1.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -119,7 +119,7 @@ if __name__ == "__main__":
             q1_set.append(data[row+1][:])
 
     # Joint 2 data
-    filepath = './src/robot_description/script/SimulationData/BothData/sim_data_joint2.csv'
+    filepath = './src/autotuner/script/SimulationData/BothData/sim_data_joint2.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -131,7 +131,7 @@ if __name__ == "__main__":
             q2_set.append(data[row+1][:])
 
     # Joint 3 data
-    filepath = './src/robot_description/script/SimulationData/BothData/sim_data_joint3.csv'
+    filepath = './src/autotuner/script/SimulationData/BothData/sim_data_joint3.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []

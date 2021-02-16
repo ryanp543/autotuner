@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     # ADD DATA TO CSV FILE
     # Joint 1 data
-    filepath = './src/robot_description/script/SimulationData/BothData/sim_data_joint1.csv'
+    filepath = './src/autotuner/script/SimulationData/BothData/sim_data_joint1.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             q1_set.append(data[row+1][:])
 
     # Joint 2 data
-    filepath = './src/robot_description/script/SimulationData/BothData/sim_data_joint2.csv'
+    filepath = './src/autotuner/script/SimulationData/BothData/sim_data_joint2.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -77,7 +77,7 @@ if __name__ == "__main__":
             q2_set.append(data[row+1][:])
 
     # Joint 3 data
-    filepath = './src/robot_description/script/SimulationData/BothData/sim_data_joint3.csv'
+    filepath = './src/autotuner/script/SimulationData/BothData/sim_data_joint3.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -89,7 +89,7 @@ if __name__ == "__main__":
             q3_set.append(data[row+1][:])
 
     # Extract trajectory planner data
-    filepath_traj = './src/robot_description/script/TrajectoryPlanner/planned_trajectory3.csv'
+    filepath_traj = './src/autotuner/script/TrajectoryPlanner/planned_trajectory3.csv'
     with open(filepath_traj, 'r') as csvfile:
         traj = []
         csvreader = csv.reader(csvfile)
