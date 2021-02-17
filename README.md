@@ -14,6 +14,9 @@ The files provided in this repository are intended to be placed into a ROS packa
 
 All Python files are compatible with Python 2. Development of this library was done on an Ubuntu 18.04.5 operating system.
 
+## Autotuner Inputs
+
+The inputs into the autotuner is a URDF file
 
 ## Generating PID Gains
 
