@@ -6,13 +6,13 @@ Welcome to the RaPID Autotuner! These open-sourced scripts are associated with t
 
 TLDR; This library allows one to take a Unified Robot Description Format (URDF) file and matrices describing the passive suspension as inputs in order to generate PID gains that guarantee stability for robotic arms mounted on flexible bases. 
 
-The files provided in this repository are intended to be placed into a ROS package if you are using Gazebo to run simulations, as the provided example does. However, if you only desire to use the scripts to generate the PID gains and/or optimize a trajectory, feel free to just run the python files in the /script/TrajectoryPlanner directory according to the steps below. Otherwise, make sure to create a catkin package in your src file, delete the default package.xml and CMakeLists.txt files, and clone this repository into your package folder (and run catkin_make or catkin build, of course). All development of this library was done on an Ubuntu operating system.
+The files provided in this repository are intended to be placed into a ROS package if you are using Gazebo to run simulations, as the provided example does. However, if you only desire to use the scripts to generate the PID gains and/or optimize a trajectory, feel free to just run the python files in the /script/TrajectoryPlanner directory according to the steps below. Otherwise, make sure to create a catkin package in your src file, delete the default package.xml and CMakeLists.txt files, and clone this repository into your package folder (and run catkin_make or catkin build, of course). 
 
 ![alt text](/flowchart.JPG?raw=true)
 
 ## Requirements
 
-
+All Python files are compatible with Python 2. Development of this library was done on an Ubuntu 18.04.5 operating system.
 
 
 ## Generating PID Gains

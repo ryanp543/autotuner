@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-    <param name="/use_sim_time" value="true"/>
-    <node name="run_simulation" pkg="robot_description" type="run_simulation_1.py" output="screen"/>
-</launch>
