@@ -10,8 +10,8 @@ The files provided in this repository are intended to be placed into a ROS packa
 
 These open-sourced scripts are associated with the following paper: (To be added soon hopefully)
 
-Markup : - bullet
-	 - bullet 2
+* [Requirements](## Requirements)
+* bullet 2
 
 ## Requirements
 
