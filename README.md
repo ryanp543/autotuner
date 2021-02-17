@@ -18,11 +18,11 @@ All Python files are compatible with Python 2. Development of this library was d
 
 The inputs into the autotuner is a URDF file and a Python file containing the stiffness and damping matrices of the suspension. In this example, the URDF file was created using a Solidworks to URDF exporter for the main body and arm (excluding the "legs" of the suspension). The "legs" of the suspension are added separately to the URDF file. For an example, see the URDF files in the urdf folder.
 
-http://wiki.ros.org/sw_urdf_exporter
+Link: http://wiki.ros.org/sw_urdf_exporter
 
 The stiffness and damping matrix equations of the suspension were formulated using Motion Genesis and then written into a Python file. Nonlinearities were replaced with Taylor Series equivalents. 
 
-http://www.motiongenesis.com/
+Link: http://www.motiongenesis.com/
 
 ## Generating PID Gains
 
