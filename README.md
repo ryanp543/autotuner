@@ -13,7 +13,7 @@ These open-sourced scripts are associated with the following paper: (To be added
 * [Requirements](#Requirements)
 * [Autotuner Inputs](#Autotuner-Inputs)
 * [Generating PID Gains](#Generating-PID-Gains)
-* [Trajectory Planner/Optimizer](#Trajectory-Planner/Optimizer)
+* [Trajectory Planner Optimizer](#Trajectory-Planner-Optimizer)
 * [Provided Simulation Example](#Provided-Simulation-Example)
 * [Contributors](#Contributors)
 * [Citations](#Citations)
@@ -46,7 +46,7 @@ Repeat Step 5-8 until desired stability regions are achieved
 
 Note: Running GenerateGainBounds.py with the GenerateGainsConstants.csv open will change values in the .csv, but you will not see them right away. To see the changes made to the .csv file, close and then reopen the GenerateGainsConstants.csv
 
-## Trajectory Planner/Optimizer
+## Trajectory Planner Optimizer
 
 The trajectory optimizer class can be found in the planner_3D_scipy.py of the /script/TrajectoryPlanner directory. The class and its functions can be imported into any desired Python file. An example of how to use the class can be seen in the main function of planner_3D_scipy.py.
 
