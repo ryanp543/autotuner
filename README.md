@@ -2,7 +2,7 @@
 
 ## Flexible-Base Manipulator Control Autotuner
 
-Welcome to the RaPID Autotuner! This library allows one to take a Unified Robot Description Format (URDF) file and matrices describing the passive suspension as inputs in order to generate PID gains that guarantee stability for robotic arms mounted on flexible bases. 
+Welcome to the RaPID Autotuner! These scripts allow one to take a Unified Robot Description Format (URDF) file as well as matrices describing the passive suspension as inputs and then generate PID gains that guarantee stability for robotic arms mounted on flexible bases. 
 
 The files provided in this repository are intended to be placed into a ROS package if you are using Gazebo to run simulations, as the provided example does. However, if you only desire to use the scripts to generate the PID gains and/or optimize a trajectory, feel free to just run the Python files in the `/script/TrajectoryPlanner` directory according to the steps below. Otherwise, make sure to create a catkin package in your `src` file, delete the default `package.xml` and `CMakeLists.txt` files, and clone this repository into your package folder (and run `catkin_make` or `catkin build`, of course). 
 
@@ -20,7 +20,7 @@ These open-sourced scripts are associated with the following paper: (To be added
 
 ## Requirements
 
-All Python files are compatible with Python 2. Development of this library was done on an Ubuntu 18.04.5 operating system.
+All Python files should be executed with Python 2. Development of this library was done on an Ubuntu 18.04.5 operating system.
 
 ## Autotuner Inputs
 
@@ -73,12 +73,14 @@ In this example, ros_control is used to control the simulated rover and robotic 
 ## Contributors
 
 #### Primary Contributors
-Marc-Andre Begin and Ryan Poon are the primary contributors of this project.
+Marc-Andre Begin and Ryan Poon from the [MIT Bioinstrumentation Lab](https://bioinstrumentation.mit.edu/) are the primary contributors of this project.
 
 #### Other Contributors
 Professor Ian Hunter served as the main advisor.
 
 ## Citations:
+
+In addition to the citations listed in the paper...
 
 #### For extracting dynamics of robotic arm from URDF file:
 Kris Hauser. (2016) Robust Contact Generation for Robot Simulation with Unstructured Meshes. Robotics Research, 114. 
