@@ -175,7 +175,7 @@ def PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range):
     # cbar = fig.colorbar(cs)
     # cbar.set_ticks(tick_levels)
     cs2 = ax.contour(cs, levels=tick_levels, colors='k')
-    ax.clabel(cs2, inline=True, fmt='%1.1f', manual=True)
+    ax.clabel(cs2, inline=True, fmt='%1.1f') #, manual=True)
     plt.plot(0.5, 20, marker='x', markersize=10, markeredgewidth=3, color="red")
     plt.xlabel(r"$\alpha$")
     plt.ylabel(r"$\lambda_{min}(K_I)$", rotation='horizontal')
@@ -265,8 +265,8 @@ if __name__ == "__main__":
     print "Generating gain boundary plots..."
 
     # Plot PD gain lower bounds
-    # alpha_range, K_I_range, K_D_range, K_P_range = GetGainRanges(constants, alpha_bounds, gains)
-    # PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range)
+    alpha_range, K_I_range, K_D_range, K_P_range = GetGainRanges(constants, alpha_bounds, gains)
+    PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range)
 
     # Plot stability region when active states are held at zero
     x_p = np.linspace(0, 0.6, 60)
