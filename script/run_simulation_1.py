@@ -246,7 +246,7 @@ if __name__ == "__main__":
 
     # ADD DATA TO CSV FILE
     # Chassis angle data
-    filepath = './src/robot_description/script/SimulationData/NoneData/sim_data_chassis.csv'
+    filepath = './src/autotuner/script/SimulationData/sim_data_chassis.csv'
     with open(filepath, 'wb') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
         for k in range(0, len(t_set)):
@@ -255,7 +255,7 @@ if __name__ == "__main__":
             csvwriter.writerow(qC_p_set[k])
 
     # Joint 1 data
-    filepath = './src/robot_description/script/SimulationData/NoneData/sim_data_joint1.csv'
+    filepath = './src/autotuner/script/SimulationData/sim_data_joint1.csv'
     with open(filepath, 'wb') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
         for k in range(0, len(t1_set)):
@@ -263,7 +263,7 @@ if __name__ == "__main__":
             csvwriter.writerow(q1_set[k])
 
     # Joint 2 data
-    filepath = './src/robot_description/script/SimulationData/NoneData/sim_data_joint2.csv'
+    filepath = './src/autotuner/script/SimulationData/sim_data_joint2.csv'
     with open(filepath, 'wb') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
         for k in range(0, len(t2_set)):
@@ -271,7 +271,7 @@ if __name__ == "__main__":
             csvwriter.writerow(q2_set[k])
 
     # Joint 3 data
-    filepath = './src/robot_description/script/SimulationData/NoneData/sim_data_joint3.csv'
+    filepath = './src/autotuner/script/SimulationData/sim_data_joint3.csv'
     with open(filepath, 'wb') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
         for k in range(0, len(t3_set)):
