@@ -11,7 +11,7 @@
 
 
     <!-- Defining the robot model -->
-    <param name="autotuner" command="$(find xacro)/xacro '$(find autotuner)/urdf/robot.xacro'"/>
+    <param name="robot_description" command="$(find xacro)/xacro '$(find autotuner)/urdf/robot.xacro'"/>
 
     <arg name="x" default="0" />
     <arg name="y" default="0" />
@@ -19,7 +19,7 @@
 
     <!-- Spawning the model -->
     <node pkg="gazebo_ros" type="spawn_model" name="autotuner_spawn" output="screen" 
-          args="-urdf -param autotuner -model robot -x $(arg x) -y $(arg y) -z $(arg z)" />
+          args="-urdf -param robot_description -model robot -x $(arg x) -y $(arg y) -z $(arg z)" />
 
     <!-- Loading the controllers -->
     <rosparam command="load" file="$(find autotuner)/config/joints.yaml" />
