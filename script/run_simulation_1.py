@@ -206,7 +206,7 @@ def calculate_overshoot(t_set, q_set):
         # print(t_set[k][start_index])
         # print(t_set[k][end_index])
 
-        if start_index == 0 and end_index == 0:
+        if end_index == 0:
             overshoot = 0
         else:
             if sign > 0:
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     t_start = rospy.get_time()
 
     q1_d = [-2.0944, -1.0472, 1.0472, 2.0944]
-    q2_d = [-1.0472, -2.0944, -3.1415] 
+    q2_d = [-1.0472, -2.0944, -3.1415]
     q3_d = [0.5236, 1.000, 2.094]
     labels = get_legend_names(q1_d, q2_d, q3_d)
     t_set, t1_set, t2_set, t3_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set = run_motion_sets(q1_d, q2_d, q3_d)
