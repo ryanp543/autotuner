@@ -11,7 +11,12 @@ The files provided in this repository are intended to be placed into a ROS packa
 These open-sourced scripts are associated with the following paper: (To be added soon hopefully)
 
 * [Requirements](#Requirements)
-* bullet 2
+* [Autotuner Inputs](#Autotuner Inputs)
+* [Generating PID Gains](#Generating PID Gains)
+* [Trajectory Planner/Optimizer](#Trajectory Planner/Optimizer)
+* [Provided Simulation Example](#Provided Simulation Example)
+* [Contributors](#Contributors)
+* [Citations](#Citations)
 
 ## Requirements
 
