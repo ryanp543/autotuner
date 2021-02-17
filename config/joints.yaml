@@ -65,12 +65,7 @@ wheel8_velocity_controller:
   joint: joint_wheel8
 
 # Manipulator controller
-# Test 2 {p: 132, i: 30, d: 32.264}
-# Test 3 {p: 291.74, i: 225, d: 32.264} 
-# Test 4 {p: 222.228, i: 70, d: 13} 
-# Test 5 {p: 319.466, i: 225, d: 26.5} 
 # Test 6 {p: 57.947, i: 20, d: 13.216} <<< for live
-# Test 7 {p: 22.521, i: 1, d: 1} 
 # Test 8 {p: 70.369, i: 25, d: 13} <<< for sim
 joint1_position_controller:
   type: effort_controllers/JointPositionController
