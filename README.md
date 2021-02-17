@@ -2,13 +2,16 @@
 
 ## Flexible-Base Manipulator Control Autotuner
 
-Welcome to the RaPID Autotuner! These open-sourced scripts are associated with the following paper: (To be added soon hopefully)
-
-TLDR; This library allows one to take a Unified Robot Description Format (URDF) file and matrices describing the passive suspension as inputs in order to generate PID gains that guarantee stability for robotic arms mounted on flexible bases. 
+Welcome to the RaPID Autotuner! This library allows one to take a Unified Robot Description Format (URDF) file and matrices describing the passive suspension as inputs in order to generate PID gains that guarantee stability for robotic arms mounted on flexible bases. 
 
 The files provided in this repository are intended to be placed into a ROS package if you are using Gazebo to run simulations, as the provided example does. However, if you only desire to use the scripts to generate the PID gains and/or optimize a trajectory, feel free to just run the python files in the /script/TrajectoryPlanner directory according to the steps below. Otherwise, make sure to create a catkin package in your src file, delete the default package.xml and CMakeLists.txt files, and clone this repository into your package folder (and run catkin_make or catkin build, of course). 
 
 ![alt text](/flowchart.JPG?raw=true)
+
+These open-sourced scripts are associated with the following paper: (To be added soon hopefully)
+
+Markup: - bullet
+	- bullet 2
 
 ## Requirements
 
@@ -24,7 +27,7 @@ The stiffness and damping matrix equations of the suspension were formulated usi
 
 First steps:
 
-1. Download Klamp't (Build from source if pip install doesn't work. Follow online instructions.)
+1. Download [Klamp't](https://github.com/krishauser/Klampt) (Build from source if pip install doesn't work. Follow online instructions.)
 2. Convert xacro to urdf if the file is not urdf already. There have been issues with having STL files under the visual geometry tag, so try to avoid adding STLs. 
 3. Edit robot_sim.xml in /script/TrajectoryPlanner such that "file=" points to your URDF file
 4. Run GenerateConstants.py to generate .csv file with constants
