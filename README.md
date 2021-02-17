@@ -10,6 +10,11 @@ The files provided in this repository are intended to be placed into a ROS packa
 
 ![alt text](/flowchart.JPG?raw=true)
 
+## Requirements
+
+
+
+
 ## Generating PID Gains
 
 First steps:

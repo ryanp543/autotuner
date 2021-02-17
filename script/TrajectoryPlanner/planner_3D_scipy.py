@@ -12,6 +12,8 @@ Note: To set desired orientations, use
 Date: 2/2/2021
 """
 
+from __future__ import print_function
+
 import numpy as np
 import csv
 import time
@@ -45,7 +47,7 @@ class TrajectoryPlanner3D():
         self.dt = 0.005
         self.t_cmd = 10*self.dt
         self.n_coeffs = 5
-        self.n_steps = round(self.T / self.dt)
+        self.n_steps = int(round(self.T / self.dt))
         self.t = np.linspace(0, self.T, self.n_steps)
 
         # Optimizer parameters (default settings)
@@ -72,8 +74,8 @@ class TrajectoryPlanner3D():
         self.dxa_init = dxa_init
         self.xp_init = xp_init
         self.dxp_init = dxp_init
-        self.n_p = np.shape(xp_init)[0]
-        self.n_a = np.shape(xa_init)[0]
+        self.n_p = int(np.shape(xp_init)[0])
+        self.n_a = int(np.shape(xa_init)[0])
 
 
     # Function: Set Target
@@ -87,7 +89,7 @@ class TrajectoryPlanner3D():
     def set_time_parameters(self, T, dt, mult_cmd, n_coeffs):
         self.T = T                                  # T = secs, time horizon
         self.dt = dt                                # secs, time step
-        self.n_steps = round(T / dt)                # number of time steps
+        self.n_steps = int(round(T / dt))           # number of time steps
         self.dt = T / self.n_steps                  # secs, actual time step
         self.t = np.linspace(0, T, self.n_steps)    # time vector in seconds
         self.t_cmd = mult_cmd*dt                    # time of command chunk
@@ -260,7 +262,7 @@ class TrajectoryPlanner3D():
 
         # Prints out "loading bar" to show optimization progress
         self.iteration += 1
-        print("|"*self.iteration, end="\r")
+        print("|"*self.iteration, end='\r')
 
         return cost_vector
 
@@ -283,8 +285,8 @@ class TrajectoryPlanner3D():
 
         # Split u into discrete command steps
         for mm in range(self.n_a):
-            for nn in range(0, self.n_steps, round(self.t_cmd/self.dt)):
-                u[nn:nn+round(self.t_cmd/self.dt), mm] = u[nn, mm]
+            for nn in range(0, self.n_steps, int(round(self.t_cmd/self.dt))):
+                u[nn:nn+int(round(self.t_cmd/self.dt)), mm] = u[nn, mm]
 
         return u, du
 
@@ -359,7 +361,7 @@ if __name__ == "__main__":
     from SuspensionMatrices import Suspension_8legs
     sus = Suspension_8legs()  # 3DOF model of the suspension, use with GetStiffnessMatrix and GetDampingMatrix
     world = klampt.WorldModel()
-    res = world.readFile("./agrobot_sim.xml")
+    res = world.readFile("./robot_sim.xml")
     robot = world.robot(0)
 
     # Initial states
@@ -422,6 +424,7 @@ if __name__ == "__main__":
                     ddu = planner.get_input()
                     u_command, du_command = planner.get_commands(ddu)
 
+                    # UNCOMMENT LINES BELOW to show plot of position commands, acceleration profile, etc
                     # xp, xa, dxp, dxa, delta_xp, delta_xa = planner.forward_sim(ddu)
                     # planner.plot_results(u_command, ddu, xp, xa, dxp, dxa, delta_xp, delta_xa)
 
