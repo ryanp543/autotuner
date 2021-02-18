@@ -147,13 +147,13 @@ def FindLargestXi(x_p, dx_p, x_a, dx_a, xi, sus):
 # Function: Plot PD Gain Lower Bounds
 # Plots the lower bounds of the PD gains given a range of alpha and K_I values
 def PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range):
-    plt.rc('font', size=25)
+    plt.rc('font', size=20)
 
     # Plotting K_D lower bounds
     fig, ax = plt.subplots()
     fig.set_size_inches(5, 5)
     ax.tick_params(width=3, length=6)
-    plt.subplots_adjust(left=0.15, bottom=0.25)
+    plt.subplots_adjust(left=0.15, bottom=0.2)
     plt.setp(ax.spines.values(), linewidth=3)
     plt.plot(alpha_range, K_D_range, linewidth=3)
     plt.plot(0.5, 13.5, marker='x', markersize=10, markeredgewidth = 3, color="red")
@@ -167,13 +167,18 @@ def PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range):
     fig, ax = plt.subplots()
     fig.set_size_inches(5, 5)
     ax.tick_params(width=3, length=6)
-    plt.subplots_adjust(left=0.15, bottom=0.25)
+    plt.subplots_adjust(left=0.15, bottom=0.2)
     plt.setp(ax.spines.values(), linewidth=3)
     levels = range(10, 300, 1)
     tick_levels = range(50, 300, 50)
     cs = ax.contourf(alpha_range, K_I_range, K_P_range, levels=levels, cmap=cm.PuBu_r)
-    # cbar = fig.colorbar(cs)
-    # cbar.set_ticks(tick_levels)
+
+    cbar = fig.colorbar(cs)
+    cbar.set_ticks(tick_levels)
+    cbar.set_label(r"$\lambda_{min}(K_P)$", labelpad=-40, y=1.15, rotation=0)
+    cbar.outline.set_linewidth(3)
+    cbar.ax.tick_params(width=3)
+
     cs2 = ax.contour(cs, levels=tick_levels, colors='k')
     ax.clabel(cs2, inline=True, fmt='%1.1f') #, manual=True)
     plt.plot(0.5, 20, marker='x', markersize=10, markeredgewidth=3, color="red")
@@ -268,21 +273,21 @@ if __name__ == "__main__":
     alpha_range, K_I_range, K_D_range, K_P_range = GetGainRanges(constants, alpha_bounds, gains)
     PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range)
 
-    # Plot stability region when active states are held at zero
-    x_p = np.linspace(0, 0.6, 60)
-    dx_p = np.linspace(0, 2, 60)
-    x_a = np.zeros(np.size(x_p))
-    dx_a = np.zeros(np.size(dx_p))
-
-    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
-
-    # Plot stability region when passive states are held at zero
-    x_a = np.linspace(0, 3, 60)
-    dx_a = np.linspace(0, 10, 60)
-    x_p = np.zeros(np.size(x_a))
-    dx_p = np.zeros(np.size(dx_a))
-
-    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+    # # Plot stability region when active states are held at zero
+    # x_p = np.linspace(0, 0.6, 60)
+    # dx_p = np.linspace(0, 2, 60)
+    # x_a = np.zeros(np.size(x_p))
+    # dx_a = np.zeros(np.size(dx_p))
+    #
+    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+    #
+    # # Plot stability region when passive states are held at zero
+    # x_a = np.linspace(0, 3, 60)
+    # dx_a = np.linspace(0, 10, 60)
+    # x_p = np.zeros(np.size(x_a))
+    # dx_p = np.zeros(np.size(dx_a))
+    #
+    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
 
     # Plot colorbar for stability region (if needed for nice plots)
     # plt.figure()
