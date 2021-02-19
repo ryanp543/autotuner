@@ -211,7 +211,7 @@ def FindKc(var_init, robot, sus):
     dx = [0, 0, var_init[0], 0] + list(var_init[1:])
     robot.setVelocity(dx)
 
-    x0 = [0, 0, 0, 0, 0, 0, 0] # z, p, r, 4 dof
+    x0 = [0] * (robot.numLinks()-3) # z, p, r, 4 dof (the -3 is ignoring x y and yaw)
     kC_states = scipy.optimize.fmin(GetMaxKc, x0, args=(dx, robot), disp=False)
 
     return GetMaxKc(kC_states, dx, robot)
@@ -294,32 +294,32 @@ def GetConstants(robot, sus):
     constants = []
 
     # Initializing state vectors
-    x_init = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    dx_init = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+    x_init = [0] * robot.numLinks()
+    dx_init = [0.1] * robot.numLinks()
     states = x_init + dx_init
 
     # CALCULATING MAX EIGEN VALUE OF H MATRIX (z, qroll, qpitch, 4 DOF)
     print "Calculating Max Eig H..."
     CURRENT_FUNCTION = FindMaxEigH
-    stateMaxEigH = scipy.optimize.fmin(FindMaxEigH, states[2:3]+states[4:10], args=(robot,sus), maxiter=1500) # callback=fminCallback)
+    stateMaxEigH = scipy.optimize.fmin(FindMaxEigH, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
     maxEigH = -FindMaxEigH(stateMaxEigH, robot, sus)
 
     # CALCULATING MIN EIGENVALUE OF H MATRIX (z, qroll, qpitch, 4 DOF)
     print "Calculating Min Eig H..."
     CURRENT_FUNCTION = FindMinEigH
-    stateMinEigH = scipy.optimize.fmin(FindMinEigH, states[2:3]+states[4:10], args=(robot,sus), maxiter=1500) # callback=fminCallback)
+    stateMinEigH = scipy.optimize.fmin(FindMinEigH, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
     minEigH = FindMinEigH(stateMinEigH, robot, sus)
 
     # CALCULATING MAX MAGNITUDE G VECTOR (z, qroll, qpitch, 4 DOF)
     print "Calculating Max G magnitude..."
     CURRENT_FUNCTION = FindMaxG
-    stateMaxG = scipy.optimize.fmin(FindMaxG, states[2:3]+states[4:10], args=(robot,sus), maxiter=1500) # callback=fminCallback)
+    stateMaxG = scipy.optimize.fmin(FindMaxG, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
     maxG = -FindMaxG(stateMaxG, robot, sus)
 
     # CALCULATING MAX K_G OF dg_i/dx_j MATRIX (qroll, qpitch, 4 DOF + velocities)
     print "Calculating Kg..."
     CURRENT_FUNCTION = FindKg
-    stateMaxKg = scipy.optimize.fmin(FindKg, states[4:10], args=(robot,sus), maxiter=4000) # callback=fminCallback) +states[14:20]
+    stateMaxKg = scipy.optimize.fmin(FindKg, states[4:robot.numLinks()], args=(robot,sus), maxiter=4000) # callback=fminCallback) +states[14:20]
     kG = -FindKg(stateMaxKg, robot, sus)
 
     # CALCULATING MAX K_K OF dK/dx MATRIX (qpitch, qroll, no z (doesn't change K matrix), dz, dp, dr)
@@ -337,13 +337,13 @@ def GetConstants(robot, sus):
     # CALCULATING K_X (4 DOF)
     print "Calculating Kx..."
     CURRENT_FUNCTION = FindKx
-    stateMaxKx = scipy.optimize.fmin(FindKx, states[6:10], args=(robot,sus), maxiter=1000) # callback=fminCallback)
+    stateMaxKx = scipy.optimize.fmin(FindKx, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
     kX = -FindKx(stateMaxKx, robot, sus)
 
     # CALCULATING K_C (dz, dqroll, dqpitch, 4dof vel)
     print "Calculating Kc..."
     CURRENT_FUNCTION = FindKc
-    stateMaxKc = scipy.optimize.fmin(FindKc, states[12:13]+states[14:20], args=(robot,sus), maxiter=1000) # callback=fminCallback)
+    stateMaxKc = scipy.optimize.fmin(FindKc, states[(robot.numLinks()+2):(robot.numLinks()+3)]+states[(robot.numLinks()+4):(2*robot.numLinks())], args=(robot,sus), maxiter=1000) # callback=fminCallback)
     kC = -FindKc(stateMaxKc, robot, sus)
 
     # GET MAXIMUM EIGENVALUES OF K AND B MATRICES
@@ -360,13 +360,13 @@ def GetConstants(robot, sus):
     # CALCULATING MIN EIG K MATRIX
     print "Calculating Min Eig K (passive)..."
     CURRENT_FUNCTION = FindMinEigK_passive
-    stateMinEigK_p = scipy.optimize.fmin(FindMinEigK_passive, states[6:10], args=(robot,sus), maxiter=1000) # callback=fminCallback)
+    stateMinEigK_p = scipy.optimize.fmin(FindMinEigK_passive, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
     minEigK_p = FindMinEigK_passive(stateMinEigK_p, robot, sus)
 
     # CALCULATING MIN EIG B MATRIX
     print "Calculating Min Eig B (passive)..."
     CURRENT_FUNCTION = FindMinEigB_passive
-    stateMinEigB_p = scipy.optimize.fmin(FindMinEigB_passive, states[6:10], args=(robot,sus), maxiter=1000) # callback=fminCallback)
+    stateMinEigB_p = scipy.optimize.fmin(FindMinEigB_passive, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
     minEigB_p = FindMinEigB_passive(stateMinEigB_p, robot, sus)
 
     # CALCULATING K
