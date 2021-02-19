@@ -160,7 +160,7 @@ def PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range):
     plt.xlabel(r"$\alpha$")
     plt.ylabel(r"$\lambda_{min}(K_D)$", rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.05)
-    plt.yticks([10, 20, 30, 40])
+    # plt.yticks([10, 20, 30, 40])
     plt.grid()
 
     # Plotting K_P lower bounds
@@ -169,23 +169,23 @@ def PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range):
     ax.tick_params(width=3, length=6)
     plt.subplots_adjust(left=0.15, bottom=0.2)
     plt.setp(ax.spines.values(), linewidth=3)
-    levels = range(10, 300, 1)
-    tick_levels = range(50, 300, 50)
-    cs = ax.contourf(alpha_range, K_I_range, K_P_range, levels=levels, cmap=cm.PuBu_r)
+    # levels = range(10, 300, 1)
+    # tick_levels = range(50, 300, 50)
+    cs = ax.contourf(alpha_range, K_I_range, K_P_range, cmap=cm.PuBu_r) #, levels=levels)
 
     cbar = fig.colorbar(cs)
-    cbar.set_ticks(tick_levels)
+    # cbar.set_ticks(tick_levels)
     cbar.set_label(r"$\lambda_{min}(K_P)$", labelpad=-40, y=1.15, rotation=0)
     cbar.outline.set_linewidth(3)
     cbar.ax.tick_params(width=3)
 
-    cs2 = ax.contour(cs, levels=tick_levels, colors='k')
+    cs2 = ax.contour(cs, colors='k') #, levels=tick_levels)
     ax.clabel(cs2, inline=True, fmt='%1.1f') #, manual=True)
     plt.plot(0.5, 20, marker='x', markersize=10, markeredgewidth=3, color="red")
     plt.xlabel(r"$\alpha$")
     plt.ylabel(r"$\lambda_{min}(K_I)$", rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.05)
-    plt.yticks([10, 35, 60, 90])
+    # plt.yticks([10, 35, 60, 90])
 
 
 # Function: Plot Contour Figures
@@ -227,21 +227,21 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_a
         dx = dx_a
         labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
-        setlevels = [500, 1500]
-        x_ticks = np.arange(0.5, 3, 1)
-        y_ticks = np.arange(0.0, 12, 2.5)
+        # setlevels = [500, 1500]
+        # x_ticks = np.arange(0.5, 3, 1)
+        # y_ticks = np.arange(0.0, 12, 2.5)
         # plt.text(-0.02, 1, '(b)', fontsize=20)
     else:
         x = x_p
         dx = dx_p
         labels = [r"$||\tilde{x}_p||$", r"$||\dot{\tilde{x}}_p||$"]
-        setlevels = [200, 500, 1800]
-        x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
-        y_ticks = np.arange(0.0, 2.5, 0.5) # 1
+        # setlevels = [200, 500, 1800]
+        # x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
+        # y_ticks = np.arange(0.0, 2.5, 0.5) # 1
         # plt.text(-0.25, 12, '(a)', fontsize=20)
 
     plt.locator_params(nbins=10)
-    cs_xi = ax.contour(x, dx, Xi, levels=setlevels, colors='black', linewidths=3)
+    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3) #, levels=setlevels)
     cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
     cs_l_s = ax.contourf(x, dx, Xi, levels=[0, xi_limit], cmap=cmap_stable, norm=norm_stable)
     cs_l_us = ax.contourf(x, dx, L, levels=0, cmap=cmap_unstable, norm=norm_unstable, alpha=0.7)
@@ -250,8 +250,8 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
     plt.ylabel(labels[1], rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.07)
     plt.xlabel(labels[0])
-    plt.yticks(y_ticks)
-    plt.xticks(x_ticks)
+    # plt.yticks(y_ticks)
+    # plt.xticks(x_ticks)
 
 
 # Function: Main
@@ -273,21 +273,21 @@ if __name__ == "__main__":
     alpha_range, K_I_range, K_D_range, K_P_range = GetGainRanges(constants, alpha_bounds, gains)
     PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range)
 
-    # # Plot stability region when active states are held at zero
-    # x_p = np.linspace(0, 0.6, 60)
-    # dx_p = np.linspace(0, 2, 60)
-    # x_a = np.zeros(np.size(x_p))
-    # dx_a = np.zeros(np.size(dx_p))
-    #
-    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
-    #
-    # # Plot stability region when passive states are held at zero
-    # x_a = np.linspace(0, 3, 60)
-    # dx_a = np.linspace(0, 10, 60)
-    # x_p = np.zeros(np.size(x_a))
-    # dx_p = np.zeros(np.size(dx_a))
-    #
-    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+    # Plot stability region when active states are held at zero
+    x_p = np.linspace(0, 0.6, 60)
+    dx_p = np.linspace(0, 2, 60)
+    x_a = np.zeros(np.size(x_p))
+    dx_a = np.zeros(np.size(dx_p))
+
+    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+
+    # Plot stability region when passive states are held at zero
+    x_a = np.linspace(0, 3, 60)
+    dx_a = np.linspace(0, 10, 60)
+    x_p = np.zeros(np.size(x_a))
+    dx_p = np.zeros(np.size(dx_a))
+
+    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
 
     # Plot colorbar for stability region (if needed for nice plots)
     # plt.figure()
