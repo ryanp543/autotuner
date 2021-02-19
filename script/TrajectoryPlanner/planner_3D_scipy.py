@@ -367,8 +367,8 @@ if __name__ == "__main__":
     # Initial states
     # Note: In realtime implementation, these are updated to current state whenever the trajectory planner is calleds
     # The state is [z pitch roll 4DOF]
-    xa_init = np.array([0.0, 0.0, 0.0, 0.0])
-    dxa_init = np.zeros((4))
+    xa_init = np.array([0.0] * robot.numDrivers())
+    dxa_init = np.zeros((robot.numDrivers()))
     xp_init = np.zeros((3)) # xp_target[:]
     dxp_init = np.zeros((3))
 
@@ -399,14 +399,27 @@ if __name__ == "__main__":
     MULTIPLE ACTIVE STATE TARGETS
     Calculates position commands for multiple arm orientations, then adds position commands to a .csv file for 
     Gazebo simulation. 
+    
+    Set of individual target active states for target orientations (i.e. orientation 1 is -2.0944, -1.0472, 0.5236)
+    Then, provide a list of these desired orientations, q_set. You don't necessarily have to make q_d this way (with the
+    nested for loops, etc), just as long as q_set is a list of orientations you want. 
     """
 
-    # Array of desired target active states
-    q1_d = [-2.0944, -1.0472, 1.0472, 2.0944]
-    q2_d = [-1.0472, -2.0944, -3.1415]
-    q3_d = [0.5236, 1.000, 2.094]
-    planner.set_objective_weights(3, 0.01) # acceleration, control
-    planner.set_time_parameters(1.0, 0.005, 10, 5) # T, dt, mult_cmd, n_coeffs
+    q1_d = [-2.0944, -1.0472, 1.0472, 2.0944]       # Motor 1
+    q2_d = [-1.0472, -2.0944, -3.1415]              # Motor 2
+    q3_d = [0.5236, 1.000, 2.094]                   # Motor 3
+    planner.set_objective_weights(3, 0.01)          # acceleration, control
+    planner.set_time_parameters(1.0, 0.005, 10, 5)  # T, dt, mult_cmd, n_coeffs
+
+    q_set = []
+    for ii in range(len(q1_d)):
+        for jj in range(len(q2_d)):
+            for kk in range(len(q3_d)):
+                q_set.append([q1_d[ii], q2_d[jj], q3_d[kk], 0])
+
+    """
+    DO NOT EDIT BELOW THIS LINE
+    """
 
     # Calculate position commands and add to .csv file to be read by Gazebo simulation file run_simulation2.py
     with open('./planned_trajectory.csv', 'w') as myfile:
@@ -414,23 +427,21 @@ if __name__ == "__main__":
         csvwriter.writerow(planner.get_time_parameters())
 
         sim_count = 1
-        num_simulations = len(q1_d) * len(q2_d) * len(q3_d)
-        for ii in range(len(q1_d)):
-            for jj in range(len(q2_d)):
-                for kk in range(len(q3_d)):
-                    print("Running Simulation", sim_count, "of", num_simulations)
-                    xa_target = np.array([q1_d[ii], q2_d[jj], q3_d[kk], 0])
-                    planner.set_target(xa_target)
-                    ddu = planner.get_input()
-                    u_command, du_command = planner.get_commands(ddu)
+        num_simulations = len(q_set)
+        for ii in range(len(q_set)):
+            print("Running Simulation", sim_count, "of", num_simulations)
+            xa_target = np.array(q_set[ii])
+            planner.set_target(xa_target)
+            ddu = planner.get_input()
+            u_command, du_command = planner.get_commands(ddu)
 
-                    # UNCOMMENT LINES BELOW to show plot of position commands, acceleration profile, etc
-                    # xp, xa, dxp, dxa, delta_xp, delta_xa = planner.forward_sim(ddu)
-                    # planner.plot_results(u_command, ddu, xp, xa, dxp, dxa, delta_xp, delta_xa)
+            # UNCOMMENT LINES BELOW to show plot of position commands, acceleration profile, etc
+            # xp, xa, dxp, dxa, delta_xp, delta_xa = planner.forward_sim(ddu)
+            # planner.plot_results(u_command, ddu, xp, xa, dxp, dxa, delta_xp, delta_xa)
 
-                    csvwriter.writerow([q1_d[ii], q2_d[jj], q3_d[kk]])
-                    for k in range(0, np.shape(u_command)[1]):
-                        csvwriter.writerow(u_command[:, k].tolist())
+            csvwriter.writerow(q_set[ii])
+            for k in range(0, np.shape(u_command)[1]):
+                csvwriter.writerow(u_command[:, k].tolist())
 
-                    sim_count += 1
+            sim_count += 1
 
