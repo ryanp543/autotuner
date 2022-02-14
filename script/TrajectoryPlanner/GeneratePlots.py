@@ -162,6 +162,7 @@ def PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range):
     ax.yaxis.set_label_coords(0, 1.05)
     # plt.yticks([10, 20, 30, 40])
     plt.grid()
+    plt.savefig('lowerboundkd.eps', format='eps')
 
     # Plotting K_P lower bounds
     fig, ax = plt.subplots()
@@ -180,12 +181,13 @@ def PlotRangesFigure(alpha_range, K_I_range, K_D_range, K_P_range):
     cbar.ax.tick_params(width=3)
 
     cs2 = ax.contour(cs, colors='k') #, levels=tick_levels)
-    ax.clabel(cs2, inline=True, fmt='%1.1f') #, manual=True)
+    ax.clabel(cs2, inline=True, fmt='%1.1f', manual=True)
     plt.plot(0.5, 20, marker='x', markersize=10, markeredgewidth=3, color="red")
     plt.xlabel(r"$\alpha$")
     plt.ylabel(r"$\lambda_{min}(K_I)$", rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.05)
     # plt.yticks([10, 35, 60, 90])
+    plt.savefig('lowerboundkp.eps', format='eps')
 
 
 # Function: Plot Contour Figures
@@ -227,21 +229,21 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_a
         dx = dx_a
         labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
-        # setlevels = [500, 1500]
-        # x_ticks = np.arange(0.5, 3, 1)
-        # y_ticks = np.arange(0.0, 12, 2.5)
+        setlevels = [500, 1500]
+        x_ticks = np.arange(0.5, 3, 1)
+        y_ticks = np.arange(0.0, 12, 2.5)
         # plt.text(-0.02, 1, '(b)', fontsize=20)
     else:
         x = x_p
         dx = dx_p
         labels = [r"$||\tilde{x}_p||$", r"$||\dot{\tilde{x}}_p||$"]
-        # setlevels = [200, 500, 1800]
-        # x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
-        # y_ticks = np.arange(0.0, 2.5, 0.5) # 1
+        setlevels = [200, 500, 1800]
+        x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
+        y_ticks = np.arange(0.0, 2.5, 0.5) # 1
         # plt.text(-0.25, 12, '(a)', fontsize=20)
 
     plt.locator_params(nbins=10)
-    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3) #, levels=setlevels)
+    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3, levels=setlevels)
     cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
     cs_l_s = ax.contourf(x, dx, Xi, levels=[0, xi_limit], cmap=cmap_stable, norm=norm_stable)
     cs_l_us = ax.contourf(x, dx, L, levels=0, cmap=cmap_unstable, norm=norm_unstable, alpha=0.7)
@@ -250,8 +252,13 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
     plt.ylabel(labels[1], rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.07)
     plt.xlabel(labels[0])
-    # plt.yticks(y_ticks)
-    # plt.xticks(x_ticks)
+    plt.yticks(y_ticks)
+    plt.xticks(x_ticks)
+
+    if x_p[len(x_p)-1] == 0:
+        plt.savefig('active3d.eps', format='eps')
+    else:
+        plt.savefig('passive3d.eps', format='eps')
 
 
 # Function: Main

@@ -294,6 +294,7 @@ def GetConstants(robot, sus):
     constants = []
 
     # Initializing state vectors
+    # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
     x_init = [0] * robot.numLinks()
     dx_init = [0.1] * robot.numLinks()
     states = x_init + dx_init
