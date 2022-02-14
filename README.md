@@ -1,8 +1,8 @@
-# RaPID Autotuner
+# RAPID Tuning Procedure
 
 ## Flexible-Base Manipulator Control Autotuner
 
-Welcome to the RaPID Autotuner! These scripts allow one to take a Unified Robot Description Format (URDF) file as well as matrices describing the passive suspension as inputs and then generates PID gains that guarantee stability for robotic arms mounted on flexible bases. 
+Welcome to the RAPID (Robust Automatic PID) Tuning Procedure! These scripts allow one to take a Unified Robot Description Format (URDF) file as well as matrices describing the passive suspension as inputs and then generates PID gains that guarantee stability for robotic arms mounted on flexible bases. 
 
 The files provided in this repository are intended to be placed into a ROS package if you are using Gazebo to run simulations, as the provided example does. However, if you only desire to generate the PID gains and/or optimize a trajectory, feel free to just run the Python files in the `/script/TrajectoryPlanner` directory according to the steps below. Otherwise, make sure to create a catkin package in your `src` file, delete the default `package.xml` and `CMakeLists.txt` files, and clone this repository into your package folder (and run `catkin_make` or `catkin build`, of course). 
 
