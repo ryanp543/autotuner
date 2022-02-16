@@ -22,7 +22,7 @@ from SuspensionMatrices import Suspension_8legs
 
 # NOTE: Edit for specific robot
 FILEPATH = './robot_sim.xml'
-FILEPATH_CSV = './GenerateGainsConstants.csv'
+FILEPATH_CSV = './DynamicsMassConstants.csv'
 
 # Function: Max Eigenvalue H
 # Returns the maximum eigenvalue of the H matrix for a given state. Used with minimizer to find maximum possible
@@ -117,27 +117,9 @@ def FindKc(var_init, robot, sus):
     return GetMaxKc(kC_states, dx, robot)
 
 
-# Function: Main
-# Running this main function will generate the constants and alpha bounds and then output a .csv file containing these
-# values (for future plotting, etc).
-if __name__ == "__main__":
-    # Upload URDF file, klampt models.
-    world = klampt.WorldModel()
-    res = world.readFile(FILEPATH)
-
-    robot = world.robot(0)
-    sus = Suspension_8legs()
-    print "Number of DOFs: " + str(robot.numLinks())
-    print "Number of Links: " + str(robot.numDrivers())
-
-    link1 = robot.link(6)
-    link2 = robot.link(7)
-    link3 = robot.link(8)
-    link4 = robot.link(9)
-    link4_mass = link4.getMass()
-
-    added_mass = 1
-    attachment_point = [0.042, -0.036475, 0]
+def GetAdjustedConstants(robot, sus, added_mass, attachment_point):
+    # This function calculates the adjusted constants that depend on the end effector mass. Because the EE mass changes,
+    # these constants change, too.
     Ixx_added = added_mass*attachment_point[1]**2 # Ixx = my^2
     Iyy_added = added_mass*attachment_point[0]**2 # Iyy = mx^2
     Izz_added = added_mass*(attachment_point[0]**2 + attachment_point[1]**2) # Izz = m(x^2 + y^2)
@@ -181,4 +163,70 @@ if __name__ == "__main__":
     stateMaxEigH = scipy.optimize.fmin(FindMaxEigH, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
     maxEigH = -FindMaxEigH(stateMaxEigH, robot, sus)
     print maxEigH
-    # default 26.43113890337936
+
+    # CALCULATING MIN EIGENVALUE OF H MATRIX (z, qroll, qpitch, 4 DOF)
+    print "Calculating Min Eig H..."
+    CURRENT_FUNCTION = FindMinEigH
+    stateMinEigH = scipy.optimize.fmin(FindMinEigH, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
+    minEigH = FindMinEigH(stateMinEigH, robot, sus)
+    print minEigH
+
+    # CALCULATING MAX K_G OF dg_i/dx_j MATRIX (qroll, qpitch, 4 DOF + velocities)
+    print "Calculating Kg..."
+    CURRENT_FUNCTION = FindKg
+    stateMaxKg = scipy.optimize.fmin(FindKg, states[4:robot.numLinks()], args=(robot,sus), maxiter=4000) # callback=fminCallback) +states[14:20]
+    kG = -FindKg(stateMaxKg, robot, sus)
+    print kG
+
+    # CALCULATING MAX MAGNITUDE G VECTOR (z, qroll, qpitch, 4 DOF)
+    print "Calculating Max G magnitude..."
+    CURRENT_FUNCTION = FindMaxG
+    stateMaxG = scipy.optimize.fmin(FindMaxG, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
+    maxG = -FindMaxG(stateMaxG, robot, sus)
+    print maxG
+
+    # CALCULATING K_C (dz, dqroll, dqpitch, 4dof vel)
+    print "Calculating Kc..."
+    CURRENT_FUNCTION = FindKc
+    stateMaxKc = scipy.optimize.fmin(FindKc, states[(robot.numLinks()+2):(robot.numLinks()+3)]+states[(robot.numLinks()+4):(2*robot.numLinks())], args=(robot,sus), maxiter=1000) # callback=fminCallback)
+    kC = -FindKc(stateMaxKc, robot, sus)
+    print kC
+
+    adjusted_constants = [maxEigH, minEigH, kG, maxG, kC]
+    return adjusted_constants
+
+
+# Function: Main
+# Running this main function will generate the constants and alpha bounds and then output a .csv file containing these
+# values (for future plotting, etc).
+if __name__ == "__main__":
+    # Upload URDF file, klampt models.
+    world = klampt.WorldModel()
+    res = world.readFile(FILEPATH)
+
+    robot = world.robot(0)
+    sus = Suspension_8legs()
+    print "Number of DOFs: " + str(robot.numLinks())
+    print "Number of Links: " + str(robot.numDrivers())
+
+    link4 = robot.link(9)
+    link4_mass = link4.getMass()
+
+    # CREATE ADDED MASS LIST AND ATTACHMENT POINT CONSTANTS
+    added_mass_list = [x * 0.1 for x in range(0, 2)]
+    attachment_point = [0.042, -0.036475, 0]
+
+    # Open .csv file
+    with open(FILEPATH_CSV, 'w') as myfile:
+        csvwriter = csv.writer(myfile, delimiter=',')
+        csvwriter.writerow(["mass", "maxEigH", "minEigH", "kG", "maxG", "kC"])
+
+        # Calculate masses/adjusted constants and put them in .csv
+        for added_mass in added_mass_list:
+            adjusted_constants = GetAdjustedConstants(robot, sus, added_mass, attachment_point)
+            constants = [added_mass] + adjusted_constants
+            print adjusted_constants
+            print added_mass
+            csvwriter.writerow(constants)
+
+    print "\nCSV file generated, script complete"

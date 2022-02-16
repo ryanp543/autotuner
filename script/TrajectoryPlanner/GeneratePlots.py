@@ -25,7 +25,7 @@ from SuspensionMatrices import Suspension_8legs
 # CONSTANTS AND FILEPATHS
 # Change filepath location path to your GenerateGainsConstants.csv (as if you were running this code from the
 # Trajectory Planner directory
-FILEPATH = './GenerateGainsConstants.csv'
+FILEPATH = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
 # Extracts data from the .csv file generated from GenerateConstants.py and GenerateGainBounds.py
