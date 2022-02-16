@@ -52,6 +52,38 @@ def FindMinEigH(var_init, robot, sus):
     return min(w)
 
 
+# Function: Find Constant kG
+# Calculates the constant kG for determining alpha.
+def FindKg(var_init, robot, sus):
+    gravity = (0, 0, -9.81)
+    list_dGdx = []
+    list_max = []
+
+    x = [0, 0, 0, 0] + list(var_init[0:len(var_init)])  # roll pitch 4dof
+    dx = 0.001 # [0, 0, 0, 0] + list(var_init[len(var_init)/2:len(var_init)])
+    x_original = x[:]
+
+    # For each individual DOF derivative (with the other derivatives held at 0), dGdx is calculated
+    for j in range(4, len(x)):
+        x = x_original[:]
+
+        robot.setConfig(x)
+        G1 = robot.getGravityForces(gravity)
+        x[j] = x[j] + dx
+        robot.setConfig(x)
+        G2 = robot.getGravityForces(gravity)
+
+        for i in range(4, len(G1)): # range(4, len(G1)):
+            list_dGdx.append(abs((G2[i]-G1[i])/dx))
+
+        # Find the maximum dGdx of dx[j]
+        list_max.append(max(list_dGdx))
+        list_dGdx = []
+
+    # Returns the maximum dGdx overall
+    return -max(list_max)
+
+
 # Function: Maximum Gravity Magnitude
 # Calculates and returns the magnitude of the gravity vector for a given robot state. Used with the minimizer to find
 # the largest possible magnitude.
@@ -132,13 +164,10 @@ if __name__ == "__main__":
     #print new_inertia
 
     # Set new mass properties
-    gravity = (0,0,-9.81)
-    print robot.getGravityForces(gravity)
     link4_mass.setMass(new_mass)
     link4_mass.setCom(new_com)
     link4_mass.setInertia(new_inertia)
     link4.setMass(link4_mass)
-    print robot.getGravityForces(gravity)
 
     # Initializing state vectors
     # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
