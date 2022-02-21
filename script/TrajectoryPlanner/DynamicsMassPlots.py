@@ -25,13 +25,14 @@ from SuspensionMatrices import Suspension_8legs
 # CONSTANTS AND FILEPATHS
 # Change filepath location path to your GenerateGainsConstants.csv (as if you were running this code from the
 # Trajectory Planner directory
-FILEPATH = './GenerateGainsConstants_default.csv'
+FILEPATH_MASS_CSV = './DynamicsMassConstants.csv'
+FILEPATH_DEFAULT_CSV = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
 # Extracts data from the .csv file generated from GenerateConstants.py and GenerateGainBounds.py
-def ExtractData():
+def ExtractDefaultData():
     # Extracts data and puts into list
-    with open(FILEPATH, 'rb') as myfile:
+    with open(FILEPATH_DEFAULT_CSV, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
         for row in csvreader:
@@ -59,6 +60,24 @@ def ExtractData():
         gains.append(float(data[k][1]))
 
     return constants, alpha_bounds, alpha, gains
+
+
+# Function: Extract data from mass variation .csv
+# Extracts the constants data that is altered by changing the mass
+def ExtractMassData(entry):
+    # Extracts data and puts into list
+    with open(FILEPATH_MASS_CSV, 'rb') as myfile:
+        csvreader = csv.reader(myfile, delimiter=',')
+        data = []
+        for row in csvreader:
+            data.append(row)
+
+    adjusted_constants = []
+    for k in range(0, 6):
+        adjusted_constants.append(float(data[entry][k]))
+
+    # Returns mass, maxEigH, minEigH, maxG, kG, kC
+    return adjusted_constants
 
 
 # Function: Get Xi
@@ -158,7 +177,7 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_a
         dx = dx_a
         labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
-        setlevels = [500, 1500]
+        # setlevels = [500, 1500]
         x_ticks = np.arange(0.5, 3, 1)
         y_ticks = np.arange(0.0, 12, 2.5)
         # plt.text(-0.02, 1, '(b)', fontsize=20)
@@ -166,13 +185,13 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_p
         dx = dx_p
         labels = [r"$||\tilde{x}_p||$", r"$||\dot{\tilde{x}}_p||$"]
-        setlevels = [200, 500, 1800]
+        # setlevels = [200, 500, 1800]
         x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
         y_ticks = np.arange(0.0, 2.5, 0.5) # 1
         # plt.text(-0.25, 12, '(a)', fontsize=20)
 
     plt.locator_params(nbins=10)
-    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3, levels=setlevels)
+    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3) #, levels=setlevels)
     cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
     cs_l_s = ax.contourf(x, dx, Xi, levels=[0, xi_limit], cmap=cmap_stable, norm=norm_stable)
     cs_l_us = ax.contourf(x, dx, L, levels=0, cmap=cmap_unstable, norm=norm_unstable, alpha=0.7)
@@ -195,22 +214,29 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
 if __name__ == "__main__":
     # Initialize and extract all needed constants
     sus = Suspension_8legs()
-    constants, alpha_bounds, alpha, gains = ExtractData()
-    K_I, K_P, K_D = gains[0], gains[1], gains[2]
-    c = constants[:]
-    maxEigH, minEigH, maxG, kG, kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, kC, k, total_mass = \
-        c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13]
+    c, alpha_bounds, alpha, gains = ExtractDefaultData()
+
+    # default PID 58.048, 20, 13.5
+    K_I, K_P, K_D = 100, 20, 25
+    # K_I, K_P, K_D = gains[0], gains[1], gains[2]
+
+
+    kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, k, total_mass = \
+        c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[12], c[13]
+
+    entry = 12
+    mass, maxEigH, minEigH, kG, maxG , kC = ExtractMassData(entry)
 
     # Start generating plots
     print "==== Plots ===="
 
-    # Plot stability region when active states are held at zero
-    x_p = np.linspace(0, 0.6, 60)
-    dx_p = np.linspace(0, 2, 60)
-    x_a = np.zeros(np.size(x_p))
-    dx_a = np.zeros(np.size(dx_p))
-
-    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+    # # Plot stability region when active states are held at zero
+    # x_p = np.linspace(0, 0.6, 60)
+    # dx_p = np.linspace(0, 2, 60)
+    # x_a = np.zeros(np.size(x_p))
+    # dx_a = np.zeros(np.size(dx_p))
+    #
+    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
 
     # Plot stability region when passive states are held at zero
     x_a = np.linspace(0, 3, 60)
