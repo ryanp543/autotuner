@@ -64,7 +64,7 @@ def ExtractDefaultData():
 
 # Function: Extract data from mass variation .csv
 # Extracts the constants data that is altered by changing the mass
-def ExtractMassData(entry):
+def ExtractMassData():
     # Extracts data and puts into list
     with open(FILEPATH_MASS_CSV, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
@@ -72,12 +72,24 @@ def ExtractMassData(entry):
         for row in csvreader:
             data.append(row)
 
-    adjusted_constants = []
-    for k in range(0, 6):
-        adjusted_constants.append(float(data[entry][k]))
+    # Create empty lists
+    mass_list = []
+    maxEigH_list = []
+    minEigH_list = []
+    kG_list = []
+    maxG_list = []
+    kC_list = []
 
-    # Returns mass, maxEigH, minEigH, maxG, kG, kC
-    return adjusted_constants
+    for k in range(1, len(data)):
+        mass_list.append(float(data[k][0]))
+        maxEigH_list.append(float(data[k][1]))
+        minEigH_list.append(float(data[k][2]))
+        kG_list.append(float(data[k][3]))
+        maxG_list.append(float(data[k][4]))
+        kC_list.append(float(data[k][5]))
+
+    # Returns mass, maxEigH, minEigH, kG, maxG, kC
+    return mass_list, maxEigH_list, minEigH_list, kG_list, maxG_list, kC_list
 
 
 # Function: Get Xi
@@ -216,16 +228,27 @@ if __name__ == "__main__":
     sus = Suspension_8legs()
     c, alpha_bounds, alpha, gains = ExtractDefaultData()
 
-    # default PID 58.048, 20, 13.5
-    K_I, K_P, K_D = 100, 20, 25
-    # K_I, K_P, K_D = gains[0], gains[1], gains[2]
-
-
+    # Initialize all constants from the provided .csv files
     kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, k, total_mass = \
         c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[12], c[13]
 
-    entry = 12
-    mass, maxEigH, minEigH, kG, maxG , kC = ExtractMassData(entry)
+    # Extract lists of constants adjusted by the variations of mass
+    mass_list, maxEigH_list, minEigH_list, kG_list, maxG_list, kC_list = ExtractMassData()
+
+    # Set PID gains based on variation in masses (I gain and alphas held constant)
+    # K_I, K_P, K_D = gains[0], gains[1], gains[2] # default .csv values
+    K_I = 20
+    alpha = 0.5
+    K_P_list = []
+    K_D_list = []
+    for k in range(len(mass_list)):
+        # Calculate PD gains and add to the list
+        K_P = (alpha ** 2) * maxEigH_list[k] + kG_list[k] + (1 / alpha) * K_I
+        K_D = alpha * maxEigH_list[k]
+        K_P_list.append(K_P)
+        K_D_list.append(K_D)
+
+    # plt.plot(mass_list, maxG_list)
 
     # Start generating plots
     print "==== Plots ===="
@@ -237,14 +260,14 @@ if __name__ == "__main__":
     # dx_a = np.zeros(np.size(dx_p))
     #
     # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
-
-    # Plot stability region when passive states are held at zero
-    x_a = np.linspace(0, 3, 60)
-    dx_a = np.linspace(0, 10, 60)
-    x_p = np.zeros(np.size(x_a))
-    dx_p = np.zeros(np.size(dx_a))
-
-    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+    #
+    # # Plot stability region when passive states are held at zero
+    # x_a = np.linspace(0, 3, 60)
+    # dx_a = np.linspace(0, 10, 60)
+    # x_p = np.zeros(np.size(x_a))
+    # dx_p = np.zeros(np.size(dx_a))
+    #
+    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
 
     plt.show()
 

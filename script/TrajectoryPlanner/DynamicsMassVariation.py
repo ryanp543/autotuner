@@ -237,7 +237,7 @@ if __name__ == "__main__":
         c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[12], c[13]
 
     # CREATE ADDED MASS LIST AND ATTACHMENT POINT CONSTANTS
-    added_mass_list = [x * 0.1 for x in range(0, 24)]
+    added_mass_list = [x * 0.01 for x in range(0, 241)]
     attachment_point = [0.042, -0.036475, 0]
 
     # Open .csv file
