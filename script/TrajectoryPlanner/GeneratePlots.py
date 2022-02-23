@@ -104,8 +104,8 @@ def GetXi(x_p, dx_p, x_a, dx_a, sus):
 # Function: Get L
 # Calculates the value of L according to the equations in the paper
 def GetL(x_p, dx_p, x_a, dx_a, sus):
-    L = -alpha * (FindMaxEigKB_passive(x_p, sus)[0] - k) * (x_p ** 2) + \
-        -(FindMaxEigKB_passive(x_p, sus)[1]) * (dx_p ** 2) + \
+    L = -alpha * (FindMinEigKB_passive(x_p, sus)[0] - k) * (x_p ** 2) + \
+        -(FindMinEigKB_passive(x_p, sus)[1]) * (dx_p ** 2) + \
         -alpha * ((alpha ** 2) * maxEigH + kG - kG) * (x_a ** 2) + \
         -K_D * (dx_a ** 2) + \
         alpha * maxEigH * ((dx_p ** 2) + (dx_a ** 2)) + kK * kX * (dx_p + alpha * x_p) * x_p + \
@@ -116,7 +116,7 @@ def GetL(x_p, dx_p, x_a, dx_a, sus):
 
 # Function: Find Max Stiffness and Damping Eigenvalues (Passive States )
 # Calculates the minimum eigenvalues of the stiffness and damping matrices for a range of passive states
-def FindMaxEigKB_passive(x_p, sus):
+def FindMinEigKB_passive(x_p, sus):
     eigenK = []
     eigenB = []
     for weight in np.linspace(0, 1, 10):
@@ -135,11 +135,11 @@ def FindMaxEigKB_passive(x_p, sus):
 
 # Function: Find Largest Xi
 # Calculates the largest Xi value for the stable region of the stability region plot
-def FindLargestXi(x_p, dx_p, x_a, dx_a, xi, sus):
+def FindLargestXi(x_p, dx_p, x_a, dx_a, xi, L, sus):
     xi_smallest = np.amax(xi) # smallest xi for unstable
     for ii in range(np.size(dx_p)):
         for jj in range(np.size(x_p)):
-            if (GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus) > 0) and (xi[ii,jj] < xi_smallest):
+            if (L[ii,jj] > 0) and (xi[ii,jj] < xi_smallest):
                 xi_smallest = xi[ii, jj]
 
     return xi_smallest
@@ -218,7 +218,7 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
     norm_unstable = colors.BoundaryNorm(bounds_unstable, cmap_unstable.N)
 
     # Create colormap for stable region (bounded by largest Xi for stable region)
-    xi_limit = FindLargestXi(x_p, dx_p, x_a, dx_a, Xi, sus)
+    xi_limit = FindLargestXi(x_p, dx_p, x_a, dx_a, Xi, L, sus)
     cmap_stable = colors.ListedColormap(['green', 'white'])
     bounds_stable = [np.amin(Xi), xi_limit, np.amax(Xi)]
     norm_stable = colors.BoundaryNorm(bounds_stable, cmap_stable.N)

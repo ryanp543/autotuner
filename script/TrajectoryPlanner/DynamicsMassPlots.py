@@ -25,7 +25,7 @@ from SuspensionMatrices import Suspension_8legs
 # CONSTANTS AND FILEPATHS
 # Change filepath location path to your GenerateGainsConstants.csv (as if you were running this code from the
 # Trajectory Planner directory
-FILEPATH_MASS_CSV = './DynamicsMassConstants.csv'
+FILEPATH_MASS_CSV = './DynamicsMassConstants_highres.csv'
 FILEPATH_DEFAULT_CSV = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
@@ -108,10 +108,12 @@ def GetXi(x_p, dx_p, x_a, dx_a, sus):
 
 # Function: Get L
 # Calculates the value of L according to the equations in the paper
+#     L = -alpha * (FindMinEigKB_passive(x_p, sus)[0] - k) * (x_p ** 2) + \
+#         -(FindMinEigKB_passive(x_p, sus)[1]) * (dx_p ** 2) + \
 def GetL(x_p, dx_p, x_a, dx_a, sus):
-    L = -alpha * (FindMaxEigKB_passive(x_p, sus)[0] - k) * (x_p ** 2) + \
-        -(FindMaxEigKB_passive(x_p, sus)[1]) * (dx_p ** 2) + \
-        -alpha * ((alpha ** 2) * maxEigH + kG - kG) * (x_a ** 2) + \
+    L = -alpha * (FindMinEigKB_passive(x_p, sus)[0] - k) * (x_p ** 2) + \
+        -(FindMinEigKB_passive(x_p, sus)[1]) * (dx_p ** 2) + \
+        -alpha * (K_P - (1/alpha) * K_I - kG) * (x_a ** 2) + \
         -K_D * (dx_a ** 2) + \
         alpha * maxEigH * ((dx_p ** 2) + (dx_a ** 2)) + kK * kX * (dx_p + alpha * x_p) * x_p + \
         alpha * kC * np.sqrt((x_p ** 2) + (x_a ** 2)) * ((dx_p ** 2) + (dx_a ** 2)) + \
@@ -119,9 +121,9 @@ def GetL(x_p, dx_p, x_a, dx_a, sus):
     return L
 
 
-# Function: Find Max Stiffness and Damping Eigenvalues (Passive States )
+# Function: Find Min Stiffness and Damping Eigenvalues (Passive States)
 # Calculates the minimum eigenvalues of the stiffness and damping matrices for a range of passive states
-def FindMaxEigKB_passive(x_p, sus):
+def FindMinEigKB_passive(x_p, sus):
     eigenK = []
     eigenB = []
     for weight in np.linspace(0, 1, 10):
@@ -140,11 +142,11 @@ def FindMaxEigKB_passive(x_p, sus):
 
 # Function: Find Largest Xi
 # Calculates the largest Xi value for the stable region of the stability region plot
-def FindLargestXi(x_p, dx_p, x_a, dx_a, xi, sus):
+def FindLargestXi(x_p, dx_p, x_a, dx_a, xi, L, sus):
     xi_smallest = np.amax(xi) # smallest xi for unstable
     for ii in range(np.size(dx_p)):
         for jj in range(np.size(x_p)):
-            if (GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus) > 0) and (xi[ii,jj] < xi_smallest):
+            if (L[ii,jj] > 0) and (xi[ii,jj] < xi_smallest):
                 xi_smallest = xi[ii, jj]
 
     return xi_smallest
@@ -153,6 +155,77 @@ def FindLargestXi(x_p, dx_p, x_a, dx_a, xi, sus):
 # Function: Plot Contour Figures
 # Plots the stability regions of the system for passive and active states/derivatives
 def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
+    # Generate Xi and L datasets based on range of passive/active states
+    Xi = np.zeros((np.size(dx_p), np.size(x_p)))
+    L = np.zeros((np.size(dx_p), np.size(x_p)))
+
+    print "Generating xi and l datasets..."
+    for ii in range(np.size(dx_p)):
+        for jj in range(np.size(x_p)):
+            Xi[ii,jj] = GetXi(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus)
+            L[ii,jj] = GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus)
+
+    # Set up contour plots
+    print "Generating colormaps, finding max xi..."
+    plt.rc('font', size=20)
+    fig, ax = plt.subplots()
+    fig.set_size_inches(5, 5)
+    plt.subplots_adjust(left=0.15, top=0.85, bottom=0.25)
+    plt.setp(ax.spines.values(), linewidth=3)
+    ax.tick_params(width=3, length=6)
+
+    # Create colormap for unstable region
+    cmap_unstable = colors.ListedColormap(['white', 'red'])
+    bounds_unstable = [np.amin(L), 0, np.amax(L)]
+    norm_unstable = colors.BoundaryNorm(bounds_unstable, cmap_unstable.N)
+
+    # Create colormap for stable region (bounded by largest Xi for stable region)
+    xi_limit = FindLargestXi(x_p, dx_p, x_a, dx_a, Xi, L, sus)
+    cmap_stable = colors.ListedColormap(['green', 'white'])
+    bounds_stable = [np.amin(Xi), xi_limit, np.amax(Xi)]
+    norm_stable = colors.BoundaryNorm(bounds_stable, cmap_stable.N)
+
+    # Plot contour plots
+    print "Generating contour plots..."
+    if x_p[len(x_p)-1] == 0:
+        x = x_a
+        dx = dx_a
+        labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
+        # setlevels = [500, 1500]
+        x_ticks = np.arange(0.5, 3, 1)
+        y_ticks = np.arange(0.0, 12, 2.5)
+        # plt.text(-0.02, 1, '(b)', fontsize=20)
+    else:
+        x = x_p
+        dx = dx_p
+        labels = [r"$||\tilde{x}_p||$", r"$||\dot{\tilde{x}}_p||$"]
+        # setlevels = [200, 500, 1800]
+        x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
+        y_ticks = np.arange(0.0, 2.5, 0.5) # 1
+        # plt.text(-0.25, 12, '(a)', fontsize=20)
+
+    plt.locator_params(nbins=10)
+    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3) #, levels=setlevels)
+    cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
+    cs_l_s = ax.contourf(x, dx, Xi, levels=[0, xi_limit], cmap=cmap_stable, norm=norm_stable)
+    cs_l_us = ax.contourf(x, dx, L, levels=0, cmap=cmap_unstable, norm=norm_unstable, alpha=0.7)
+    ax.clabel(cs_xi, inline=1, fmt='%1.1f')
+    ax.clabel(cs_xi_lim, inline=1, fmt='%1.1f')
+    plt.ylabel(labels[1], rotation='horizontal')
+    ax.yaxis.set_label_coords(0, 1.07)
+    plt.xlabel(labels[0])
+    plt.yticks(y_ticks)
+    plt.xticks(x_ticks)
+
+    # if x_p[len(x_p)-1] == 0:
+    #     plt.savefig('active3d.eps', format='eps')
+    # else:
+    #     plt.savefig('passive3d.eps', format='eps')
+
+
+# Function: Plot Limit Line Figure
+# Plots only the limit line of the contour plot
+def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
     # Generate Xi and L datasets based on range of passive/active states
     Xi = np.zeros((np.size(dx_p), np.size(x_p)))
     L = np.zeros((np.size(dx_p), np.size(x_p)))
@@ -203,22 +276,14 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
         # plt.text(-0.25, 12, '(a)', fontsize=20)
 
     plt.locator_params(nbins=10)
-    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3) #, levels=setlevels)
     cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
-    cs_l_s = ax.contourf(x, dx, Xi, levels=[0, xi_limit], cmap=cmap_stable, norm=norm_stable)
-    cs_l_us = ax.contourf(x, dx, L, levels=0, cmap=cmap_unstable, norm=norm_unstable, alpha=0.7)
-    ax.clabel(cs_xi, inline=1, fmt='%1.1f')
     ax.clabel(cs_xi_lim, inline=1, fmt='%1.1f')
+
     plt.ylabel(labels[1], rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.07)
     plt.xlabel(labels[0])
     plt.yticks(y_ticks)
     plt.xticks(x_ticks)
-
-    # if x_p[len(x_p)-1] == 0:
-    #     plt.savefig('active3d.eps', format='eps')
-    # else:
-    #     plt.savefig('passive3d.eps', format='eps')
 
 
 # Function: Main
@@ -236,31 +301,41 @@ if __name__ == "__main__":
     mass_list, maxEigH_list, minEigH_list, kG_list, maxG_list, kC_list = ExtractMassData()
 
     # Set PID gains based on variation in masses (I gain and alphas held constant)
-    # K_I, K_P, K_D = gains[0], gains[1], gains[2] # default .csv values
-    K_I = 20
+    # K_P, K_I, K_D = gains[0], gains[1], gains[2] # default .csv values
+    K_I = 20.0
     alpha = 0.5
     K_P_list = []
     K_D_list = []
-    for k in range(len(mass_list)):
+    for index in range(len(mass_list)):
         # Calculate PD gains and add to the list
-        K_P = (alpha ** 2) * maxEigH_list[k] + kG_list[k] + (1 / alpha) * K_I
-        K_D = alpha * maxEigH_list[k]
+        K_P = (alpha ** 2) * maxEigH_list[index] + kG_list[index] + (1 / alpha) * K_I
+        K_D = alpha * maxEigH_list[index]
         K_P_list.append(K_P)
-        K_D_list.append(K_D)
+        K_D_list.append(K_D+0.5)
 
-    # plt.plot(mass_list, maxG_list)
+    n = 0
+    print mass_list[n]
+    maxEigH = maxEigH_list[n]
+    minEigH = minEigH_list[n]
+    kG = kG_list[n]
+    maxG = maxG_list[n]
+    kC = kC_list[n]
+    K_P = K_P_list[n]
+    K_D = K_D_list[n]
+
+    print K_P, K_I, K_D
 
     # Start generating plots
     print "==== Plots ===="
 
-    # # Plot stability region when active states are held at zero
-    # x_p = np.linspace(0, 0.6, 60)
-    # dx_p = np.linspace(0, 2, 60)
-    # x_a = np.zeros(np.size(x_p))
-    # dx_a = np.zeros(np.size(dx_p))
-    #
-    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
-    #
+    # Plot stability region when active states are held at zero
+    x_p = np.linspace(0, 0.6, 60)
+    dx_p = np.linspace(0, 2, 60)
+    x_a = np.zeros(np.size(x_p))
+    dx_a = np.zeros(np.size(dx_p))
+
+    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+
     # # Plot stability region when passive states are held at zero
     # x_a = np.linspace(0, 3, 60)
     # dx_a = np.linspace(0, 10, 60)
@@ -268,6 +343,14 @@ if __name__ == "__main__":
     # dx_p = np.zeros(np.size(dx_a))
     #
     # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+
+    # # Plot stability region when passive states are held at zero
+    # x_a = np.linspace(0, 3, 60)
+    # dx_a = np.linspace(0, 10, 60)
+    # x_p = np.zeros(np.size(x_a))
+    # dx_p = np.zeros(np.size(dx_a))
+    #
+    # PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus)
 
     plt.show()
 

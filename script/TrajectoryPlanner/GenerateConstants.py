@@ -242,10 +242,10 @@ def FindKx(var_init, robot, sus):
     return -np.linalg.norm(x_p_optimized)
 
 
-# Function: Find Minimum K Eigenvalue (Passive States)
+# Function: Find Minimum K Eigenvalue (Passive States at Equilibrium)
 # Finds the final passive states using the SolveXp() function and then uses this "optimized" passive state to calculate
 # the eigenvalues of the stiffness matrix.
-def FindMinEigK_passive(var_init, robot, sus):
+def FindMinEigK_PassiveEq(var_init, robot, sus):
     gravity = (0, 0, -9.81)
 
     x_p = [0, 0, 0]
@@ -256,10 +256,10 @@ def FindMinEigK_passive(var_init, robot, sus):
     return min(w)
 
 
-# Function: Find Minimum B Eigenvalue (Passive States)
+# Function: Find Minimum B Eigenvalue (Passive States at Equilibrium)
 # Finds the final passive states using the SolveXp() function and then uses this "optimized" passive state to calculate
 # the eigenvalues of the damping matrix.
-def FindMinEigB_passive(var_init, robot, sus):
+def FindMinEigB_PassiveEq(var_init, robot, sus):
     gravity = (0, 0, -9.81)
 
     x_p = [0, 0, 0]
@@ -358,17 +358,17 @@ def GetConstants(robot, sus):
     stateMaxEigB = scipy.optimize.fmin(FindMaxEigB, states[4:6], args=(robot,sus), maxiter=1000) # callback=fminCallback)
     maxEigB = -FindMaxEigB(stateMaxEigB, robot, sus)
 
-    # CALCULATING MIN EIG K MATRIX
-    print "Calculating Min Eig K (passive)..."
-    CURRENT_FUNCTION = FindMinEigK_passive
-    stateMinEigK_p = scipy.optimize.fmin(FindMinEigK_passive, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
-    minEigK_p = FindMinEigK_passive(stateMinEigK_p, robot, sus)
+    # CALCULATING MIN EIG K MATRIX AT EQUILIBRIUM
+    print "Calculating Min Eig K (passive, eq)..."
+    CURRENT_FUNCTION = FindMinEigK_PassiveEq
+    stateMinEigK_p = scipy.optimize.fmin(FindMinEigK_PassiveEq, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
+    minEigK_p_eq = FindMinEigK_PassiveEq(stateMinEigK_p, robot, sus)
 
-    # CALCULATING MIN EIG B MATRIX
-    print "Calculating Min Eig B (passive)..."
-    CURRENT_FUNCTION = FindMinEigB_passive
-    stateMinEigB_p = scipy.optimize.fmin(FindMinEigB_passive, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
-    minEigB_p = FindMinEigB_passive(stateMinEigB_p, robot, sus)
+    # CALCULATING MIN EIG B MATRIX AT EQUILIBRIUM
+    print "Calculating Min Eig B (passive, eq)..."
+    CURRENT_FUNCTION = FindMinEigB_PassiveEq
+    stateMinEigB_p = scipy.optimize.fmin(FindMinEigB_PassiveEq, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
+    minEigB_p_eq = FindMinEigB_PassiveEq(stateMinEigB_p, robot, sus)
 
     # CALCULATING K
     k = kG + (kK * kX)
@@ -386,18 +386,18 @@ def GetConstants(robot, sus):
     print "k =", k
     print "Max Eig K =", maxEigK
     print "Max Eig B =", maxEigB
-    print "Min Eig K (passive) =", minEigK_p
-    print "Min Eig B (passive) =", minEigB_p
+    print "Min Eig K (passive, eq) =", minEigK_p_eq
+    print "Min Eig B (passive, eq) =", minEigB_p_eq
     print "Total Mass =", total_mass
-    constants.extend([maxEigH, minEigH, maxG, kG, kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, kC, k, total_mass])
+    constants.extend([maxEigH, minEigH, maxG, kG, kK, kB, kX, maxEigK, maxEigB, minEigK_p_eq, minEigB_p_eq, kC, k, total_mass])
 
     # CALCULATING ALPHA AND PID GAINS
-    alpha1 = ((minEigK_p - k) / maxEigH) ** 0.5
+    alpha1 = ((minEigK_p_eq - k) / maxEigH) ** 0.5
     print "\n==== Alpha1 ====\n", alpha1
     alphas.append(alpha1)
 
     alpha2 = symbols('alpha2')
-    eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p
+    eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p_eq
     sol = solve(eq)
     print "\n==== Alpha2 ===="
     for k in range(len(sol)):
@@ -422,7 +422,7 @@ if __name__ == "__main__":
     print "Number of Links: " + str(robot.numDrivers())
 
     # Initialize variable names for constants and alpha inputs into the .csv file
-    names = ["maxEigH", "minEigH", "maxG", "kG", "kK", "kB", "kX", "maxEigK", "maxEigB", "minEigK_p", "minEigB_p",
+    names = ["maxEigH", "minEigH", "maxG", "kG", "kK", "kB", "kX", "maxEigK", "maxEigB", "minEigK_p_eq", "minEigB_p_eq",
              "kC", "k", "total_mass"]
     alpha_names = ["alpha1", "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"]  # i.e. alpha2_r1 = "alpha 2, root 1"
     adj_names = ["Selected Alpha", "I Gain"]
