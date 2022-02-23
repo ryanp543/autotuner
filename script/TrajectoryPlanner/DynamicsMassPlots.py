@@ -108,11 +108,9 @@ def GetXi(x_p, dx_p, x_a, dx_a, sus):
 
 # Function: Get L
 # Calculates the value of L according to the equations in the paper
-#     L = -alpha * (FindMinEigKB_passive(x_p, sus)[0] - k) * (x_p ** 2) + \
-#         -(FindMinEigKB_passive(x_p, sus)[1]) * (dx_p ** 2) + \
-def GetL(x_p, dx_p, x_a, dx_a, sus):
-    L = -alpha * (FindMinEigKB_passive(x_p, sus)[0] - k) * (x_p ** 2) + \
-        -(FindMinEigKB_passive(x_p, sus)[1]) * (dx_p ** 2) + \
+def GetL(x_p, dx_p, x_a, dx_a, minEigK_p, minEigB_p, sus):
+    L = -alpha * (minEigK_p - k) * (x_p ** 2) + \
+        -(minEigB_p) * (dx_p ** 2) + \
         -alpha * (K_P - (1/alpha) * K_I - kG) * (x_a ** 2) + \
         -K_D * (dx_a ** 2) + \
         alpha * maxEigH * ((dx_p ** 2) + (dx_a ** 2)) + kK * kX * (dx_p + alpha * x_p) * x_p + \
@@ -137,7 +135,7 @@ def FindMinEigKB_passive(x_p, sus):
         eigenK.append(min(w_K))
         eigenB.append(min(w_B))
 
-    return [min(eigenK), min(eigenB)]
+    return min(eigenK), min(eigenB)
 
 
 # Function: Find Largest Xi
@@ -155,15 +153,27 @@ def FindLargestXi(x_p, dx_p, x_a, dx_a, xi, L, sus):
 # Function: Plot Contour Figures
 # Plots the stability regions of the system for passive and active states/derivatives
 def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
+    # Reference global first_time, minEigK_p, minEigB_p to speed up plotting
+    global first_time, minEigK_p, minEigB_p
+
     # Generate Xi and L datasets based on range of passive/active states
     Xi = np.zeros((np.size(dx_p), np.size(x_p)))
     L = np.zeros((np.size(dx_p), np.size(x_p)))
+    if first_time:
+        minEigK_p = np.zeros((np.size(dx_p), np.size(x_p)))
+        minEigB_p = np.zeros((np.size(dx_p), np.size(x_p)))
 
     print "Generating xi and l datasets..."
     for ii in range(np.size(dx_p)):
         for jj in range(np.size(x_p)):
+            if first_time:
+                minEigK_p[ii,jj], minEigB_p[ii,jj] = FindMinEigKB_passive(x_p[jj], sus)
             Xi[ii,jj] = GetXi(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus)
-            L[ii,jj] = GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus)
+            L[ii,jj] = GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], minEigK_p[ii,jj], minEigB_p[ii,jj], sus)
+
+    # If first time generating minEigK_p and minEigB_p, no need to calculate for rest of script
+    if first_time:
+        first_time = False
 
     # Set up contour plots
     print "Generating colormaps, finding max xi..."
@@ -224,17 +234,29 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
 
 
 # Function: Plot Limit Line Figure
-# Plots only the limit line of the contour plot
+# Plots only the limit line of the stability regions of the system for passive and active states/derivatives
 def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
+    # Reference global first_time, minEigK_p, minEigB_p to speed up plotting
+    global first_time, minEigK_p, minEigB_p
+
     # Generate Xi and L datasets based on range of passive/active states
     Xi = np.zeros((np.size(dx_p), np.size(x_p)))
     L = np.zeros((np.size(dx_p), np.size(x_p)))
+    if first_time:
+        minEigK_p = np.zeros((np.size(dx_p), np.size(x_p)))
+        minEigB_p = np.zeros((np.size(dx_p), np.size(x_p)))
 
     print "Generating xi and l datasets..."
     for ii in range(np.size(dx_p)):
         for jj in range(np.size(x_p)):
+            if first_time:
+                minEigK_p[ii,jj], minEigB_p[ii,jj] = FindMinEigKB_passive(x_p[jj], sus)
             Xi[ii,jj] = GetXi(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus)
-            L[ii,jj] = GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus)
+            L[ii,jj] = GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], minEigK_p[ii,jj], minEigB_p[ii,jj], sus)
+
+    # If first time generating minEigK_p and minEigB_p, no need to calculate for rest of script
+    if first_time:
+        first_time = False
 
     # Set up contour plots
     print "Generating colormaps, finding max xi..."
@@ -251,7 +273,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
     norm_unstable = colors.BoundaryNorm(bounds_unstable, cmap_unstable.N)
 
     # Create colormap for stable region (bounded by largest Xi for stable region)
-    xi_limit = FindLargestXi(x_p, dx_p, x_a, dx_a, Xi, sus)
+    xi_limit = FindLargestXi(x_p, dx_p, x_a, dx_a, Xi, L, sus)
     cmap_stable = colors.ListedColormap(['green', 'white'])
     bounds_stable = [np.amin(Xi), xi_limit, np.amax(Xi)]
     norm_stable = colors.BoundaryNorm(bounds_stable, cmap_stable.N)
@@ -276,14 +298,16 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         # plt.text(-0.25, 12, '(a)', fontsize=20)
 
     plt.locator_params(nbins=10)
-    cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
-    ax.clabel(cs_xi_lim, inline=1, fmt='%1.1f')
-
+    cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)])
+    # ax.clabel(cs_xi_lim, inline=1, fmt='%1.1f')
     plt.ylabel(labels[1], rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.07)
     plt.xlabel(labels[0])
     plt.yticks(y_ticks)
     plt.xticks(x_ticks)
+
+    curve = np.array(cs_xi_lim.collections[0].get_paths()[0].vertices, dtype = object)
+    return curve
 
 
 # Function: Main
@@ -294,7 +318,7 @@ if __name__ == "__main__":
     c, alpha_bounds, alpha, gains = ExtractDefaultData()
 
     # Initialize all constants from the provided .csv files
-    kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, k, total_mass = \
+    kK, kB, kX, maxEigK, maxEigB, minEigK_p_eq, minEigB_p_eq, k, total_mass = \
         c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[12], c[13]
 
     # Extract lists of constants adjusted by the variations of mass
@@ -311,46 +335,57 @@ if __name__ == "__main__":
         K_P = (alpha ** 2) * maxEigH_list[index] + kG_list[index] + (1 / alpha) * K_I
         K_D = alpha * maxEigH_list[index]
         K_P_list.append(K_P)
-        K_D_list.append(K_D+0.5)
+        K_D_list.append(K_D+0.35)
 
-    n = 0
-    print mass_list[n]
-    maxEigH = maxEigH_list[n]
-    minEigH = minEigH_list[n]
-    kG = kG_list[n]
-    maxG = maxG_list[n]
-    kC = kC_list[n]
-    K_P = K_P_list[n]
-    K_D = K_D_list[n]
+    # Retrieves curves of all xi_limit lines in preparation for 3D plottings
+    curve_p_total = []
+    curve_a_total = []
+    first_time = True
+    for n in range(0, 2):
+        print mass_list[n]
+        maxEigH, minEigH, kG, maxG, kC = maxEigH_list[n], minEigH_list[n], kG_list[n], maxG_list[n], kC_list[n]
+        K_P = K_P_list[n]
+        K_D = K_D_list[n]
 
-    print K_P, K_I, K_D
+        # Start generating plots
+        print "==== Plots ===="
 
-    # Start generating plots
-    print "==== Plots ===="
+        # # Plot stability region when active states are held at zero
+        # x_p = np.linspace(0, 0.6, 60)
+        # dx_p = np.linspace(0, 2, 60)
+        # x_a = np.zeros(np.size(x_p))
+        # dx_a = np.zeros(np.size(dx_p))
+        #
+        # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+        #
+        # # Plot stability region when passive states are held at zero
+        # x_a = np.linspace(0, 3, 60)
+        # dx_a = np.linspace(0, 10, 60)
+        # x_p = np.zeros(np.size(x_a))
+        # dx_p = np.zeros(np.size(dx_a))
+        #
+        # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
 
-    # Plot stability region when active states are held at zero
-    x_p = np.linspace(0, 0.6, 60)
-    dx_p = np.linspace(0, 2, 60)
-    x_a = np.zeros(np.size(x_p))
-    dx_a = np.zeros(np.size(dx_p))
+        # Plotting curves of each added mass value
+        # Plot stability region when active states are held at zero
+        x_p = np.linspace(0, 0.6, 60)
+        dx_p = np.linspace(0, 2, 60)
+        x_a = np.zeros(np.size(x_p))
+        dx_a = np.zeros(np.size(dx_p))
 
-    PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+        curve_p = PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus)    # note curve_p is an np.array object
+        curve_p_total.append(curve_p)                               # note curve_p_total is a list of np.array objects
 
-    # # Plot stability region when passive states are held at zero
-    # x_a = np.linspace(0, 3, 60)
-    # dx_a = np.linspace(0, 10, 60)
-    # x_p = np.zeros(np.size(x_a))
-    # dx_p = np.zeros(np.size(dx_a))
-    #
-    # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
+        # Plot stability region when passive states are held at zero
+        x_a = np.linspace(0, 3, 60)
+        dx_a = np.linspace(0, 10, 60)
+        x_p = np.zeros(np.size(x_a))
+        dx_p = np.zeros(np.size(dx_a))
 
-    # # Plot stability region when passive states are held at zero
-    # x_a = np.linspace(0, 3, 60)
-    # dx_a = np.linspace(0, 10, 60)
-    # x_p = np.zeros(np.size(x_a))
-    # dx_p = np.zeros(np.size(dx_a))
-    #
-    # PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus)
+        curve_a = PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus)
+        curve_a_total.append(curve_a)
+
+    # plt.close("all") # will close all figures
 
     plt.show()
 
