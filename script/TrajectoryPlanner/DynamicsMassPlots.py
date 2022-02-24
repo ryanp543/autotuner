@@ -18,6 +18,7 @@ import matplotlib.ticker as mticker
 import matplotlib.patches as mpatches
 from sympy import symbols, Eq, solve
 from matplotlib import colors, cm
+from mpl_toolkits.mplot3d import Axes3D
 
 import GenerateGainBounds as GGB
 from SuspensionMatrices import Suspension_8legs
@@ -279,7 +280,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
     norm_stable = colors.BoundaryNorm(bounds_stable, cmap_stable.N)
 
     # Plot contour plots
-    print "Generating contour plots..."
+    # print "Generating contour plots..."
     if x_p[len(x_p)-1] == 0:
         x = x_a
         dx = dx_a
@@ -341,7 +342,7 @@ if __name__ == "__main__":
     curve_p_total = []
     curve_a_total = []
     first_time = True
-    for n in range(0, 2):
+    for n in range(0, 100):
         print mass_list[n]
         maxEigH, minEigH, kG, maxG, kC = maxEigH_list[n], minEigH_list[n], kG_list[n], maxG_list[n], kC_list[n]
         K_P = K_P_list[n]
@@ -385,7 +386,48 @@ if __name__ == "__main__":
         curve_a = PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus)
         curve_a_total.append(curve_a)
 
-    # plt.close("all") # will close all figures
+    # First close all previous contour plots
+    plt.close("all")
+
+    # Then set up new 3d figure to plot all the curves
+    plt.rc('font', size=10)
+
+    fig_3d_passive = plt.figure()
+    ax_passive = fig_3d_passive.gca(projection='3d')
+    ax_passive.set_xlabel(r"$||\tilde{x}_p||$")
+    ax_passive.set_ylabel("Added Mass (kg)")
+    ax_passive.set_zlabel(r"$||\dot{\tilde{x}}_p||$")
+    ax_passive.invert_yaxis()
+
+    fig_3d_active = plt.figure()
+    ax_active = fig_3d_active.gca(projection='3d')
+    ax_active.set_xlabel(r"$||\tilde{x}_a||$")
+    ax_active.set_ylabel("Added Mass (kg)")
+    ax_active.set_zlabel(r"$||\dot{\tilde{x}}_a||$")
+    ax_active.invert_yaxis()
+
+    x_p, y_p, z_p, x_a, y_a, z_a = [], [], [], [], [], []
+    for m in range(len(curve_p_total)):
+        # Plot passive state curves
+        x_p.extend(curve_p_total[m][:, 0].tolist()) # This gives x
+        z_p.extend(curve_p_total[m][:, 1].tolist()) # This gives dx
+        y_p.extend([mass_list[m]] * len(curve_p_total[m][:, 0].tolist()))
+        # ax_passive.plot(x_p, y_p, z_p)
+
+        # Plot active state curves
+        x_a.extend(curve_a_total[m][:, 0].tolist()) # This gives x
+        z_a.extend(curve_a_total[m][:, 1].tolist()) # This gives dx
+        y_a.extend([mass_list[m]] * len(curve_a_total[m][:, 0].tolist()))
+
+        # Plot active state curves
+        # x_a = curve_a_total[m][:, 0] # This gives x
+        # z_a = curve_a_total[m][:, 1] # This gives dx
+        # y_a = mass_list[m] * np.ones(np.size(x_a))
+        #
+        # ax_active.plot(x_a, y_a, z_a)
+
+    surf_p = ax_passive.plot_trisurf(x_p, y_p, z_p)
+    surf_a = ax_active.plot_trisurf(x_a, y_a, z_a)
 
     plt.show()
 
