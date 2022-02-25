@@ -247,7 +247,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         minEigK_p = np.zeros((np.size(dx_p), np.size(x_p)))
         minEigB_p = np.zeros((np.size(dx_p), np.size(x_p)))
 
-    print "Generating xi and l datasets..."
+    # print "Generating xi and l datasets..."
     for ii in range(np.size(dx_p)):
         for jj in range(np.size(x_p)):
             if first_time:
@@ -260,7 +260,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         first_time = False
 
     # Set up contour plots
-    print "Generating colormaps, finding max xi..."
+    # print "Generating colormaps, finding max xi..."
     plt.rc('font', size=20)
     fig, ax = plt.subplots()
     fig.set_size_inches(5, 5)
@@ -332,24 +332,26 @@ if __name__ == "__main__":
     K_P_list = []
     K_D_list = []
     for index in range(len(mass_list)):
-        # Calculate PD gains and add to the list
-        K_P = (alpha ** 2) * maxEigH_list[index] + kG_list[index] + (1 / alpha) * K_I
-        K_D = alpha * maxEigH_list[index]
+        # # Calculate PD gains and add to the list
+        # K_P = (alpha ** 2) * maxEigH_list[index] + kG_list[index] + (1 / alpha) * K_I
+        # K_D = alpha * maxEigH_list[index]
+
+        # Or make the PD gains constant
+        K_P = gains[0]
+        K_D = gains[2]
+
         K_P_list.append(K_P)
-        K_D_list.append(K_D+0.35)
+        K_D_list.append(K_D)
 
     # Retrieves curves of all xi_limit lines in preparation for 3D plottings
     curve_p_total = []
     curve_a_total = []
     first_time = True
-    for n in range(0, 100):
-        print mass_list[n]
+    for n in range(0, 241):
+        print "Mass: " + str(mass_list[n])
         maxEigH, minEigH, kG, maxG, kC = maxEigH_list[n], minEigH_list[n], kG_list[n], maxG_list[n], kC_list[n]
         K_P = K_P_list[n]
         K_D = K_D_list[n]
-
-        # Start generating plots
-        print "==== Plots ===="
 
         # # Plot stability region when active states are held at zero
         # x_p = np.linspace(0, 0.6, 60)
@@ -386,8 +388,8 @@ if __name__ == "__main__":
         curve_a = PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus)
         curve_a_total.append(curve_a)
 
-    # First close all previous contour plots
-    plt.close("all")
+        # Close generated contour plots
+        plt.close("all")
 
     # Then set up new 3d figure to plot all the curves
     plt.rc('font', size=10)
@@ -406,28 +408,34 @@ if __name__ == "__main__":
     ax_active.set_zlabel(r"$||\dot{\tilde{x}}_a||$")
     ax_active.invert_yaxis()
 
-    x_p, y_p, z_p, x_a, y_a, z_a = [], [], [], [], [], []
+    # x_p, y_p, z_p, x_a, y_a, z_a = [], [], [], [], [], []
     for m in range(len(curve_p_total)):
-        # Plot passive state curves
-        x_p.extend(curve_p_total[m][:, 0].tolist()) # This gives x
-        z_p.extend(curve_p_total[m][:, 1].tolist()) # This gives dx
-        y_p.extend([mass_list[m]] * len(curve_p_total[m][:, 0].tolist()))
-        # ax_passive.plot(x_p, y_p, z_p)
-
-        # Plot active state curves
-        x_a.extend(curve_a_total[m][:, 0].tolist()) # This gives x
-        z_a.extend(curve_a_total[m][:, 1].tolist()) # This gives dx
-        y_a.extend([mass_list[m]] * len(curve_a_total[m][:, 0].tolist()))
-
-        # Plot active state curves
-        # x_a = curve_a_total[m][:, 0] # This gives x
-        # z_a = curve_a_total[m][:, 1] # This gives dx
-        # y_a = mass_list[m] * np.ones(np.size(x_a))
+        # # Collect points for passive state surface plot
+        # x_p.extend(curve_p_total[m][:, 0].tolist()) # This gives x
+        # z_p.extend(curve_p_total[m][:, 1].tolist()) # This gives dx
+        # y_p.extend([mass_list[m]] * len(curve_p_total[m][:, 0].tolist()))
         #
-        # ax_active.plot(x_a, y_a, z_a)
+        # # Collect points for active state surface plot
+        # x_a.extend(curve_a_total[m][:, 0].tolist()) # This gives x
+        # z_a.extend(curve_a_total[m][:, 1].tolist()) # This gives dx
+        # y_a.extend([mass_list[m]] * len(curve_a_total[m][:, 0].tolist()))
 
-    surf_p = ax_passive.plot_trisurf(x_p, y_p, z_p)
-    surf_a = ax_active.plot_trisurf(x_a, y_a, z_a)
+        # Plot active state curves
+        x_p = curve_p_total[m][:, 0] # This gives x
+        z_p = curve_p_total[m][:, 1] # This gives dx
+        y_p = mass_list[m] * np.ones(np.size(x_p))
+
+        ax_passive.plot(x_p, y_p, z_p)
+
+        # Plot active state curves
+        x_a = curve_a_total[m][:, 0] # This gives x
+        z_a = curve_a_total[m][:, 1] # This gives dx
+        y_a = mass_list[m] * np.ones(np.size(x_a))
+
+        ax_active.plot(x_a, y_a, z_a)
+
+    # surf_p = ax_passive.plot_trisurf(x_p, y_p, z_p)
+    # surf_a = ax_active.plot_trisurf(x_a, y_a, z_a)
 
     plt.show()
 
