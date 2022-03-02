@@ -337,8 +337,8 @@ if __name__ == "__main__":
         # K_D = alpha * maxEigH_list[index]
 
         # Or make the PD gains constant
-        K_P = gains[0]
-        K_D = gains[2]
+        K_P = gains[0] # 85.0
+        K_D = gains[2] # 16.0
 
         K_P_list.append(K_P)
         K_D_list.append(K_D)
@@ -371,8 +371,8 @@ if __name__ == "__main__":
 
         # Plotting curves of each added mass value
         # Plot stability region when active states are held at zero
-        x_p = np.linspace(0, 0.6, 60)
-        dx_p = np.linspace(0, 2, 60)
+        x_p = np.linspace(0, 0.6, 60) # (0, 0.6, 120)
+        dx_p = np.linspace(0, 2, 60) # (0, 2, 120)
         x_a = np.zeros(np.size(x_p))
         dx_a = np.zeros(np.size(dx_p))
 
@@ -380,8 +380,8 @@ if __name__ == "__main__":
         curve_p_total.append(curve_p)                               # note curve_p_total is a list of np.array objects
 
         # Plot stability region when passive states are held at zero
-        x_a = np.linspace(0, 3, 60)
-        dx_a = np.linspace(0, 10, 60)
+        x_a = np.linspace(0, 3, 60) # (0, 6, 120)
+        dx_a = np.linspace(0, 10, 60) # (0, 20, 120)
         x_p = np.zeros(np.size(x_a))
         dx_p = np.zeros(np.size(dx_a))
 
@@ -399,6 +399,9 @@ if __name__ == "__main__":
     ax_passive.set_xlabel(r"$||\tilde{x}_p||$")
     ax_passive.set_ylabel("Added Mass (kg)")
     ax_passive.set_zlabel(r"$||\dot{\tilde{x}}_p||$")
+    ax_passive.set_xlim(0.0, 0.6) # position mag
+    ax_passive.set_ylim(0.0, 2.5) # mass
+    ax_passive.set_zlim(0.0, 2.0) # velocity mag
     ax_passive.invert_yaxis()
 
     fig_3d_active = plt.figure()
@@ -406,6 +409,9 @@ if __name__ == "__main__":
     ax_active.set_xlabel(r"$||\tilde{x}_a||$")
     ax_active.set_ylabel("Added Mass (kg)")
     ax_active.set_zlabel(r"$||\dot{\tilde{x}}_a||$")
+    ax_active.set_xlim(0.0, 3.0) # position mag
+    ax_active.set_ylim(0.0, 2.5) # mass
+    ax_active.set_zlim(0.0, 10.0) # velocity mag
     ax_active.invert_yaxis()
 
     # x_p, y_p, z_p, x_a, y_a, z_a = [], [], [], [], [], []
