@@ -319,11 +319,16 @@ if __name__ == "__main__":
     c, alpha_bounds, alpha, gains = ExtractDefaultData()
 
     # Initialize all constants from the provided .csv files
-    kK, kB, kX, maxEigK, maxEigB, minEigK_p_eq, minEigB_p_eq, k, total_mass = \
-        c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[12], c[13]
+    kK, kB, kX, maxEigK, maxEigB, minEigK_p_eq, minEigB_p_eq, total_mass = \
+        c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[13]
 
     # Extract lists of constants adjusted by the variations of mass
     mass_list, maxEigH_list, minEigH_list, kG_list, maxG_list, kC_list = ExtractMassData()
+
+    # Create list of k constants which changes based on kG
+    k_list = []
+    for index0 in range(len(mass_list)):
+        k_list.append(kG_list[index0] + kK*kX)
 
     # Set PID gains based on variation in masses (I gain and alphas held constant)
     # K_P, K_I, K_D = gains[0], gains[1], gains[2] # default .csv values
@@ -349,7 +354,7 @@ if __name__ == "__main__":
     first_time = True
     for n in range(0, 241):
         print "Mass: " + str(mass_list[n])
-        maxEigH, minEigH, kG, maxG, kC = maxEigH_list[n], minEigH_list[n], kG_list[n], maxG_list[n], kC_list[n]
+        maxEigH, minEigH, kG, maxG, kC, k = maxEigH_list[n], minEigH_list[n], kG_list[n], maxG_list[n], kC_list[n], k_list[n]
         K_P = K_P_list[n]
         K_D = K_D_list[n]
 
