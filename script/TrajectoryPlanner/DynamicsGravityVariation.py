@@ -204,8 +204,11 @@ def FindKc(var_init, robot, sus):
     def GetMaxKc(x0, dx, robot):
         x = [0, 0, x0[0], 0] + list(x0[1:])
         robot.setConfig(x)
-        C_v = np.asarray(robot.getCoriolisForces())
-        kC = np.linalg.norm(C_v) / (np.linalg.norm(dx) ** 2)
+        # C_v = np.asarray(robot.getCoriolisForceMatrix())
+        # C_v = np.transpose(C_v)
+        # C_forces = C_v.dot(np.asarray(dx))
+        C_forces = np.asarray(robot.getCoriolisForces())
+        kC = np.linalg.norm(C_forces) / (np.linalg.norm(dx) ** 2)
         return -kC
 
     dx = [0, 0, var_init[0], 0] + list(var_init[1:])
@@ -248,7 +251,9 @@ def FindMinEigK_PassiveEq(var_init, robot, sus):
     x_p_optimized = scipy.optimize.fmin(SolveXp, x_p, args=(sus, robot, var_init, gravity), xtol=0.000001, disp=False)
 
     K_p = sus.GetStiffnessMatrix(z=x_p_optimized[0], qPitch=x_p_optimized[2], qRoll=x_p_optimized[1])
-    K_p[0][0] = K_p[0][0]*math.cos(1.3)
+    K_p[0][0] = K_p[0][0]*math.cos(roll)*math.cos(pitch)
+    K_p[0][1] = K_p[0][1]*math.cos(roll)
+    K_p[0][2] = K_p[0][2]*math.cos(pitch)
 
     w, v = np.linalg.eig(K_p)
 
@@ -262,6 +267,10 @@ def FindMinEigB_PassiveEq(var_init, robot, sus):
     x_p = [0, 0, 0]
     x_p_optimized = scipy.optimize.fmin(SolveXp, x_p, args=(sus, robot, var_init, gravity), xtol=0.000001, disp=False)
     B_p = sus.GetDampingMatrix(qPitch=x_p_optimized[2], qRoll=x_p_optimized[1])
+    B_p[0][0] = B_p[0][0]*math.cos(roll)*math.cos(pitch)
+    B_p[0][1] = B_p[0][1]*math.cos(roll)
+    B_p[0][2] = B_p[0][2]*math.cos(pitch)
+
     w, v = np.linalg.eig(B_p)
 
     return min(w)
@@ -292,6 +301,10 @@ if __name__ == "__main__":
     states = x_init + dx_init
 
     gravity = (-9.81*math.cos(math.pi/4), 0, -9.81*math.cos(math.pi/4))
+    gravity = (0, 0, -9.81)
+    roll = 0
+    pitch = -1.5
+
 
     # CALCULATING MAX EIGEN VALUE OF H MATRIX (z, qroll, qpitch, 4 DOF)
     print "Calculating Max Eig H..."
@@ -342,7 +355,7 @@ if __name__ == "__main__":
     # stateMaxKx = scipy.optimize.fmin(FindKx, states[6:robot.numLinks()], args=(robot,sus), maxiter=1000) # callback=fminCallback)
     # kX = -FindKx(stateMaxKx, robot, sus)
     # print kX
-    #
+
     # # CALCULATING K_C (dz, dqroll, dqpitch, 4dof vel)
     # print "Calculating Kc..."
     # CURRENT_FUNCTION = FindKc
