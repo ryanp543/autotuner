@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <group ns="/robot">
+    <!-- ONLY NEEDED IF USING custom gazebo plugin for writing velocity
+      TODO: Find a better way to export custom gazebo plugin to devel/lib 
+    <node pkg="robot_description"
+      type="move_to_devel.sh" name="move_gazeborosplugin_to_devel"
+      output="screen"
+    />
+    --> 
+
+
+    <!-- Defining the robot model -->
+    <param name="robot_description" command="$(find xacro)/xacro '$(find autotuner)/urdf/robot_eemass.xacro'"/>
+
+    <arg name="x" default="0" />
+    <arg name="y" default="0" />
+    <arg name="z" default="0.2" />
+
+    <!-- Spawning the model -->
+    <node pkg="gazebo_ros" type="spawn_model" name="autotuner_spawn" output="screen" 
+          args="-urdf -param robot_description -model robot -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    <!-- Loading the controllers -->
+    <rosparam command="load" file="$(find autotuner)/config/joints.yaml" />
+    
+    <!-- Launch the controllers -->
+    <node name="controller_spawner" pkg="controller_manager" type="spawner"
+      respawn="false" output="screen" ns="/robot"
+      args="--namespace=/robot
+      joint_state_controller
+      leg1_position_controller
+      leg2_position_controller
+      leg3_position_controller
+      leg4_position_controller
+      leg5_position_controller
+      leg6_position_controller
+      leg7_position_controller
+      leg8_position_controller
+      wheel1_velocity_controller
+      wheel2_velocity_controller
+      wheel3_velocity_controller
+      wheel4_velocity_controller
+      wheel5_velocity_controller
+      wheel6_velocity_controller
+      wheel7_velocity_controller
+      wheel8_velocity_controller
+      joint1_position_controller
+      joint2_position_controller
+      joint3_position_controller
+      joint4_velocity_controller
+      --timeout 60">
+    </node>
+
+    <node name="robot_track_state_listener" pkg="autotuner" type="get_track_state_client.py" />
+    <node name="robot_arm_state_listener" pkg="autotuner" type="get_arm_state_client.py" />
+
+  </group>
+</launch>

@@ -285,7 +285,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_a
         dx = dx_a
         labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
-        # setlevels = [500, 1500]
+        setlevels = [300, 1000, 2000]
         x_ticks = np.arange(0.5, 3, 1)
         y_ticks = np.arange(0.0, 12, 2.5)
         # plt.text(-0.02, 1, '(b)', fontsize=20)
@@ -293,13 +293,19 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_p
         dx = dx_p
         labels = [r"$||\tilde{x}_p||$", r"$||\dot{\tilde{x}}_p||$"]
-        # setlevels = [200, 500, 1800]
+        setlevels = [500, 1500] 
         x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
         y_ticks = np.arange(0.0, 2.5, 0.5) # 1
         # plt.text(-0.25, 12, '(a)', fontsize=20)
 
     plt.locator_params(nbins=10)
-    cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)])
+    cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
+
+    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3, levels=setlevels)
+    cs_l_s = ax.contourf(x, dx, Xi, levels=[0, xi_limit], cmap=cmap_stable, norm=norm_stable)
+    cs_l_us = ax.contourf(x, dx, L, levels=0, cmap=cmap_unstable, norm=norm_unstable, alpha=0.7)
+
+    ax.clabel(cs_xi, inline=1, fmt='%1.1f')
     # ax.clabel(cs_xi_lim, inline=1, fmt='%1.1f')
     plt.ylabel(labels[1], rotation='horizontal')
     ax.yaxis.set_label_coords(0, 1.07)
@@ -307,7 +313,10 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
     plt.yticks(y_ticks)
     plt.xticks(x_ticks)
 
+    # get limit curve first, then label limit curve (label will interfere with curve points
     curve = np.array(cs_xi_lim.collections[0].get_paths()[0].vertices, dtype = object)
+    ax.clabel(cs_xi_lim, inline=1, fmt='%1.1f')
+
     return curve
 
 
@@ -342,8 +351,8 @@ if __name__ == "__main__":
         # K_D = alpha * maxEigH_list[index]
 
         # Or make the PD gains constant
-        K_P = gains[0] # 85.0
-        K_D = gains[2] # 16.0
+        K_P = 85.0 # gains[0] # 85.0
+        K_D = 17.0 # gains[2] # 16.0
 
         K_P_list.append(K_P)
         K_D_list.append(K_D)
@@ -352,7 +361,7 @@ if __name__ == "__main__":
     curve_p_total = []
     curve_a_total = []
     first_time = True
-    for n in range(0, 241):
+    for n in range(0, len(mass_list)):
         print "Mass: " + str(mass_list[n])
         maxEigH, minEigH, kG, maxG, kC, k = maxEigH_list[n], minEigH_list[n], kG_list[n], maxG_list[n], kC_list[n], k_list[n]
         K_P = K_P_list[n]
@@ -394,7 +403,8 @@ if __name__ == "__main__":
         curve_a_total.append(curve_a)
 
         # Close generated contour plots
-        plt.close("all")
+        if n != len(mass_list)-1:
+            plt.close("all")
 
     # Then set up new 3d figure to plot all the curves
     plt.rc('font', size=10)
@@ -432,18 +442,20 @@ if __name__ == "__main__":
         # y_a.extend([mass_list[m]] * len(curve_a_total[m][:, 0].tolist()))
 
         # Plot active state curves
-        x_p = curve_p_total[m][:, 0] # This gives x
-        z_p = curve_p_total[m][:, 1] # This gives dx
-        y_p = mass_list[m] * np.ones(np.size(x_p))
+        if len(curve_p_total[m][:, 0]) != 2:
+            x_p = curve_p_total[m][:, 0] # This gives x
+            z_p = curve_p_total[m][:, 1] # This gives dx
+            y_p = mass_list[m] * np.ones(np.size(x_p))
 
-        ax_passive.plot(x_p, y_p, z_p)
+            ax_passive.plot(x_p, y_p, z_p)
 
         # Plot active state curves
-        x_a = curve_a_total[m][:, 0] # This gives x
-        z_a = curve_a_total[m][:, 1] # This gives dx
-        y_a = mass_list[m] * np.ones(np.size(x_a))
+        if len(curve_a_total[m][:,0]) != 2:
+            x_a = curve_a_total[m][:, 0] # This gives x
+            z_a = curve_a_total[m][:, 1] # This gives dx
+            y_a = mass_list[m] * np.ones(np.size(x_a))
 
-        ax_active.plot(x_a, y_a, z_a)
+            ax_active.plot(x_a, y_a, z_a)
 
     # surf_p = ax_passive.plot_trisurf(x_p, y_p, z_p)
     # surf_a = ax_active.plot_trisurf(x_a, y_a, z_a)

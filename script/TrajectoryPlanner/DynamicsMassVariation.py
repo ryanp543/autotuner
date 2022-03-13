@@ -149,20 +149,22 @@ def GetAdjustedConstants(robot, sus, added_mass, attachment_point):
     # calculate mass
     current_mass = link4_mass.getMass()
     new_mass = current_mass + added_mass
+    print added_mass
+    print new_mass
 
     # calculate com
     current_com = link4_mass.getCom()
     new_com = []
     for k in range(0, len(current_com)):
         new_com.extend([(added_mass*attachment_point[k] + current_mass*current_com[k]) / (added_mass + current_mass)])
-    #print new_com
+    print new_com
 
     # calculate inertia
     current_inertia = link4_mass.getInertia()
     new_inertia = []
     for k in range(0, len(current_inertia)):
         new_inertia.extend([current_inertia[k] + added_inertia[k]])
-    #print new_inertia
+    print new_inertia
 
     # Set new mass properties
     link4_mass.setMass(new_mass)

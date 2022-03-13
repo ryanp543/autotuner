@@ -406,10 +406,10 @@ if __name__ == "__main__":
     """
 
     q1_d = [-2.0944, -1.0472, 1.0472, 2.0944]       # Motor 1
-    q2_d = [-1.0472, -2.0944, -3.1415]              # Motor 2
-    q3_d = [0.5236, 1.000, 2.094]                   # Motor 3
-    planner.set_objective_weights(3, 0.01)          # acceleration, control
-    planner.set_time_parameters(1.0, 0.005, 10, 5)  # T, dt, mult_cmd, n_coeffs
+    q2_d = [-1.0, -2.0, -3.0]                       # Motor 2 [-1.0472, -2.0944, -3.1415]
+    q3_d = [0.5236, 1.000, 1.9]                     # Motor 3 [0.5236, 1.000, 2.094]
+    planner.set_objective_weights(3, 0.13)          # acceleration, control (3, 0.01)
+    planner.set_time_parameters(2.0, 0.005, 10, 5)  # T, dt, mult_cmd, n_coeffs (1.0, 0.005, 10, 5)
 
     q_set = []
     for ii in range(len(q1_d)):
@@ -439,7 +439,7 @@ if __name__ == "__main__":
             # xp, xa, dxp, dxa, delta_xp, delta_xa = planner.forward_sim(ddu)
             # planner.plot_results(u_command, ddu, xp, xa, dxp, dxa, delta_xp, delta_xa)
 
-            csvwriter.writerow(q_set[ii])
+            csvwriter.writerow(q_set[ii][:-1])
             for k in range(0, np.shape(u_command)[1]):
                 csvwriter.writerow(u_command[:, k].tolist())
 

@@ -38,7 +38,7 @@ from geometry_msgs.msg import TwistStamped
 
 # FILEPATH
 # Change location
-FILEPATH = './src/autotuner/script/TrajectoryPlanner/planned_trajectory3.csv'
+FILEPATH = './src/autotuner/script/TrajectoryPlanner/planned_trajectory_nomass.csv'
 
 # Function: Run Motion
 # Takes the final desired orientation and runs the trajectory planned by the optimzier
@@ -46,7 +46,7 @@ def run_motion(q_d, u, T, t_cmd, dt):
     print(q_d)
 
     # Go through and execute discretized u_command steps for t_cmd length of time
-    for m in range(0, len(u[0]), 20):
+    for m in range(0, len(u[0]), int(round(T/t_cmd))):
 
         for n in range(0, len(q_d)):
             joint_cmd_pub_dic[n].publish(u[n][m])
@@ -78,7 +78,7 @@ def run_motion_sets():
         [T, dt, num_steps, t_cmd, num_coeff] = traj[0][:]
 
     # For each trajectory plan from the .csv file...
-    for kk in range(1, len(traj), 5):
+    for kk in range(1, 11, 5): # len(traj)
         print("Running Simulation", sim_count)
 
         # Set desired positions based on position commands
