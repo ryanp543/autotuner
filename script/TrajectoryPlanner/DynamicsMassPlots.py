@@ -341,18 +341,22 @@ if __name__ == "__main__":
 
     # Set PID gains based on variation in masses (I gain and alphas held constant)
     # K_P, K_I, K_D = gains[0], gains[1], gains[2] # default .csv values
-    K_I = 20.0
+    K_I = 30.0
     alpha = 0.5
     K_P_list = []
     K_D_list = []
     for index in range(len(mass_list)):
         # # Calculate PD gains and add to the list
-        # K_P = (alpha ** 2) * maxEigH_list[index] + kG_list[index] + (1 / alpha) * K_I
-        # K_D = alpha * maxEigH_list[index]
+        K_P = (alpha ** 2) * maxEigH_list[index] + kG_list[index] + (1 / alpha) * K_I
+        K_D = alpha * maxEigH_list[index]
 
+        if index == 120:
+            print K_P
+            print K_D
+            
         # Or make the PD gains constant
-        K_P = 85.0 # gains[0] # 85.0
-        K_D = 17.0 # gains[2] # 16.0
+        K_P = 85.0 # gains[0] # 85.0 for 2.4 kg, 70.596 for 1.2 kg
+        K_D = 17.0 # gains[2] # 16.0 for 2.4 kg, 13.944 for 1.2 kg
 
         K_P_list.append(K_P)
         K_D_list.append(K_D)

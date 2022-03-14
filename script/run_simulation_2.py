@@ -78,7 +78,7 @@ def run_motion_sets():
         [T, dt, num_steps, t_cmd, num_coeff] = traj[0][:]
 
     # For each trajectory plan from the .csv file...
-    for kk in range(1, 11, 5): # len(traj)
+    for kk in range(1, len(traj), 5): # len(traj)
         print("Running Simulation", sim_count)
 
         # Set desired positions based on position commands
