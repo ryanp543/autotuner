@@ -58,43 +58,56 @@ def FindMaxEigH(var_init, robot, sus):
     return -max(w)
 
 
-# Function: Min Eigenvalue H
-# Returns the minimum eigenvalue of the H matrix for a given state. Used with minimizer to find smallest possible
-# eigenvalue of the H matrix
-def FindMinEigH(var_init, robot, sus):
-    state = [0, 0, var_init[0], 0]
-    state.extend(var_init[1:])
-    robot.setConfig(state)
-    H_array = np.asarray(robot.getMassMatrix())
-    H = np.delete(H_array, [0,1,3], 0)
-    H = np.delete(H, [0,1,3], 1)
-    w, v = np.linalg.eig(H)
-    return min(w)
-
-
-def FindKjTranspose(var_init, robot, sus):
+def FindMaxEigKenv(var_init, robot, sus):
     state = [0, 0, var_init[0], 0]
     state.extend(var_init[1:])
     robot.setConfig(state)
     link4 = robot.link(9)
     J = np.asarray(link4.getPositionJacobian([0,0,0]))
-    J = np.delete(J, [0,1,2,3], 1)
+    J = np.delete(J, [0,1,2,3,7], 1)
     J_trans = np.transpose(J)
-    J_trans_rowsums = np.absolute(np.sum(J_trans, axis=1))
+    Kenv_rob = np.linalg.multi_dot([J_trans, Kenv, J])
+    w, v = np.linalg.eig(Kenv_rob)
 
-    return -np.amax(J_trans_rowsums)
+    return -max(w)
 
 
-def FindKj(var_init, robot, sus):
-    state = [0, 0, var_init[0], 0]
-    state.extend(var_init[1:])
-    robot.setConfig(state)
-    link4 = robot.link(9)
-    J = np.asarray(link4.getPositionJacobian([0,0,0]))
-    J = np.delete(J, [0,1,3], 1)
-    J_rowsums = np.absolute(np.sum(J, axis=1))
+def FindKkEnv(var_init, robot, sus):
+    gravity = (0, 0, -9.81)
+    list_dKenvdx = []
+    list_max = []
 
-    return -np.amax(J_rowsums)
+    x = [0, 0, 0, 0] + list(var_init[0:len(var_init)])  # roll pitch 4dof
+    dx = 0.001 # [0, 0, 0, 0] + list(var_init[len(var_init)/2:len(var_init)])
+    x_original = x[:]
+
+    # For each individual DOF derivative (with the other derivatives held at 0), dGdx is calculated
+    for j in range(4, len(x)):
+        x = x_original[:]
+
+        robot.setConfig(x)
+        J1 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
+        J1 = np.delete(J1, [0, 1, 3], 1)
+        J1_trans = np.transpose(J1)
+        Kenv_rob1 = np.linalg.multi_dot([J1_trans, Kenv, J1])
+        print Kenv_rob1
+
+        x[j] = x[j] + dx
+        robot.setConfig(x)
+        J2 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
+        J2 = np.delete(J2, [0, 1, 3], 1)
+        J2_trans = np.transpose(J2)
+        Kenv_rob2 = np.linalg.multi_dot([J2_trans, Kenv, J2])
+
+        for i in range(4, len(G1)): # range(4, len(G1)):
+            list_dGdx.append(abs((Kenv_rob1[i]-Kenv_rob2[i])/dx))
+
+        # Find the maximum dGdx of dx[j]
+        list_max.append(max(list_dGdx))
+        list_dGdx = []
+
+    # Returns the maximum dGdx overall
+    return -max(list_max)
 
 
 # Function: Main
@@ -119,20 +132,24 @@ if __name__ == "__main__":
     dx_init = [0.1] * robot.numLinks()
     states = x_init + dx_init
 
+    Kenv = np.asarray([[70, 0, 0], [0, 70, 0], [0, 0, 70]])
+
     # CALCULATING MAX ROW SUM OF JACOBIAN TRANSPOSE (z, qroll, qpitch, 4 DOF)
     print "Calculating max row sum of Jacobian transpose..."
-    stateMaxJtrans = scipy.optimize.fmin(FindKjTranspose, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
-    max_Jtrans_rowsum = -FindKjTranspose(stateMaxJtrans, robot, sus)
-    if max_Jtrans_rowsum < 1.0:
-        max_Jtrans_rowsum = 1.0
-    print max_Jtrans_rowsum
-    # this is noting that there is a [0 0 1] row in the jacobian corresponding to the partial of tau_z w.r.t. F_z
+    stateMaxEigKenv = scipy.optimize.fmin(FindMaxEigKenv, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
+    maxEigKenv = -FindMaxEigKenv(stateMaxEigKenv, robot, sus)
+    print maxEigKenv
+    print stateMaxEigKenv
 
-    # CALCULATING MAX ROW SUM OF JACOBIAN (z, qroll, qpitch, 4 DOF)
-    print "Calculating max row sum of Jacobian..."
-    stateMaxJ = scipy.optimize.fmin(FindKj, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500)
-    max_J_rowsum = -FindKj(stateMaxJ, robot, sus)
-    print max_J_rowsum
+    # CALCULATING K_k,env
+    # print "Calculating K_k,env..."
+    # FindKkEnv(states[4:robot.numLinks()], robot, sus)
+
+    # CALCULATING MAX K_G OF dg_i/dx_j MATRIX (qroll, qpitch, 4 DOF + velocities)
+    # print "Calculating Kg..."
+    # CURRENT_FUNCTION = FindKg
+    # stateMaxKg = scipy.optimize.fmin(FindKg, states[4:robot.numLinks()], args=(robot,sus), maxiter=4000) # callback=fminCallback) +states[14:20]
+    # kG = -FindKg(stateMaxKg, robot, sus)
 
     # CALCULATING MAX EIGEN VALUE OF H MATRIX (z, qroll, qpitch, 4 DOF)
     # print "Calculating Max Eig H..."
