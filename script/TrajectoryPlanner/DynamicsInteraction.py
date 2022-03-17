@@ -108,7 +108,9 @@ def FindKkEnv(var_init, robot, sus):
     return -len(var_init)*max(list_max)
 
 
-def FindKr(var_init, robot, sus, radius):
+def FindKr(rad_init, robot, sus):
+
+
     state = [0, 0, var_init[0], 0]
     state.extend(var_init[1:])
     robot.setConfig(state)
@@ -150,13 +152,10 @@ if __name__ == "__main__":
     task_sphere_rad = 0.1
     xr_init = [0, 0, task_sphere_rad]
 
+    # Initializing environmental stiffness matrix
     Kenv = np.asarray([[70, 0, 0], [0, 70, 0], [0, 0, 70]])
 
-    # joint 1: -3.1415 to 3.1415
-    # joint 2: -3.1415 to 0
-    # joint 3: -1.0472 to 2.6
-    # joint 4: -1.571 to 1.571
-
+    # Initializing lower and upper bounds of robot DOFs
     lowerbounds = [-0.1, -np.pi/4, -np.pi/4, -np.pi, -np.pi, -1.0472, 0]
     upperbounds = [0.1, np.pi/4, np.pi/4, np.pi, 0, 2.6, 0]
     bnds = scipy.optimize.Bounds(lowerbounds, upperbounds)
@@ -177,11 +176,11 @@ if __name__ == "__main__":
 
     # CALCULATING Kr
     print "Calculating K_r..."
-    res_Kr = scipy.optimize.minimize(FindKr, states[2:3]+states[4:robot.numLinks()], args=(robot,sus,task_sphere_rad), bounds=bnds)
-    stateKr = res_Kr.x
-    kR = -FindKr(stateKr, robot, sus, task_sphere_rad)
-    print kR
-    print stateKr
+    FindKr(xr_init, robot, sus)
+    # res_Kr = scipy.optimize.minimize(FindKr, states[2:3]+states[4:robot.numLinks()], args=(robot,sus,task_sphere_rad), bounds=bnds)
+    # stateKr = res_Kr.x
+    # kR = -FindKr(stateKr, robot, sus, task_sphere_rad)
+    # print kR
 
     # CALCULATING MAX K_G OF dg_i/dx_j MATRIX (qroll, qpitch, 4 DOF + velocities)
     # print "Calculating Kg..."
