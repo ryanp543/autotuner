@@ -62,7 +62,7 @@ def FindMaxEigKenv(var_init, robot, sus):
     state = [0, 0, var_init[0], 0]
     state.extend(var_init[1:])
     robot.setConfig(state)
-    link4 = robot.link(9)
+    link4 = robot.link(robot.numLinks()-1)
     J = np.asarray(link4.getPositionJacobian([0,0,0]))
     J = np.delete(J, [0,1,2,3,7], 1)
     J_trans = np.transpose(J)
@@ -73,7 +73,6 @@ def FindMaxEigKenv(var_init, robot, sus):
 
 
 def FindKkEnv(var_init, robot, sus):
-    gravity = (0, 0, -9.81)
     list_dKenvdx = []
     list_max = []
 
@@ -81,33 +80,48 @@ def FindKkEnv(var_init, robot, sus):
     dx = 0.001 # [0, 0, 0, 0] + list(var_init[len(var_init)/2:len(var_init)])
     x_original = x[:]
 
-    # For each individual DOF derivative (with the other derivatives held at 0), dGdx is calculated
-    for j in range(4, len(x)):
+    # For each relevant passive state derivative
+    for k in range(4, len(x)):
         x = x_original[:]
 
         robot.setConfig(x)
         J1 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
-        J1 = np.delete(J1, [0, 1, 3], 1)
+        J1 = np.delete(J1, [0,1,2,3,9], 1)
         J1_trans = np.transpose(J1)
         Kenv_rob1 = np.linalg.multi_dot([J1_trans, Kenv, J1])
-        print Kenv_rob1
 
-        x[j] = x[j] + dx
+        x[k] = x[k] + dx
         robot.setConfig(x)
         J2 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
-        J2 = np.delete(J2, [0, 1, 3], 1)
+        J2 = np.delete(J2, [0,1,2,3,9], 1)
         J2_trans = np.transpose(J2)
         Kenv_rob2 = np.linalg.multi_dot([J2_trans, Kenv, J2])
 
-        for i in range(4, len(G1)): # range(4, len(G1)):
-            list_dGdx.append(abs((Kenv_rob1[i]-Kenv_rob2[i])/dx))
+        for i in range(len(Kenv_rob1)):
+            for j in range(len(Kenv_rob1[0])):
+                dKenv_rob = Kenv_rob2[i][j]-Kenv_rob1[i][j]
+                list_dKenvdx.append(abs(dKenv_rob/dx))  # 1D array of dK/dx for x[elem]
 
-        # Find the maximum dGdx of dx[j]
-        list_max.append(max(list_dGdx))
-        list_dGdx = []
+        list_max.append(max(list_dKenvdx))
+        list_dKenvdx = []
 
-    # Returns the maximum dGdx overall
-    return -max(list_max)
+    return -len(var_init)*max(list_max)
+
+
+def FindKr(var_init, robot, sus, radius):
+    state = [0, 0, var_init[0], 0]
+    state.extend(var_init[1:])
+    robot.setConfig(state)
+    link4 = robot.link(robot.numLinks()-1)
+    J = np.asarray(link4.getPositionJacobian([0,0,0]))
+    # print np.shape(J)
+    J = np.delete(J, [0,1,2,3,4,5,9], 1)
+    J_pseudo = np.linalg.inv(J)
+    # J_trans = np.transpose(J)
+    # J_pseudo = np.dot(J_trans, np.linalg.inv(np.dot(J, J_trans)))
+    J_pseudo_rowsum = np.abs(np.sum(J_pseudo, axis=1))
+
+    return -np.amax(J_pseudo_rowsum)*radius
 
 
 # Function: Main
@@ -132,18 +146,42 @@ if __name__ == "__main__":
     dx_init = [0.1] * robot.numLinks()
     states = x_init + dx_init
 
+    # Initializing sphere radius vector
+    task_sphere_rad = 0.1
+    xr_init = [0, 0, task_sphere_rad]
+
     Kenv = np.asarray([[70, 0, 0], [0, 70, 0], [0, 0, 70]])
 
-    # CALCULATING MAX ROW SUM OF JACOBIAN TRANSPOSE (z, qroll, qpitch, 4 DOF)
+    # joint 1: -3.1415 to 3.1415
+    # joint 2: -3.1415 to 0
+    # joint 3: -1.0472 to 2.6
+    # joint 4: -1.571 to 1.571
+
+    lowerbounds = [-0.1, -np.pi/4, -np.pi/4, -np.pi, -np.pi, -1.0472, 0]
+    upperbounds = [0.1, np.pi/4, np.pi/4, np.pi, 0, 2.6, 0]
+    bnds = scipy.optimize.Bounds(lowerbounds, upperbounds)
+
+    # CALCULATING MAX ROW SUM OF JACOBIAN TRANSPOSE (z, qroll, qpitch, 4 DOF) states[2:3]+states[4:robot.numLinks()]
     print "Calculating max row sum of Jacobian transpose..."
-    stateMaxEigKenv = scipy.optimize.fmin(FindMaxEigKenv, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
+    res_maxEigKenv = scipy.optimize.minimize(FindMaxEigKenv, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), bounds=bnds) # callback=fminCallback)
+    stateMaxEigKenv = res_maxEigKenv.x
     maxEigKenv = -FindMaxEigKenv(stateMaxEigKenv, robot, sus)
     print maxEigKenv
-    print stateMaxEigKenv
 
     # CALCULATING K_k,env
-    # print "Calculating K_k,env..."
-    # FindKkEnv(states[4:robot.numLinks()], robot, sus)
+    print "Calculating K_k,env..."
+    stateKkEnv = scipy.optimize.fmin(FindKkEnv, states[4:robot.numLinks()], args=(robot,sus), maxiter=1500)
+    KkEnv = -FindKkEnv(stateKkEnv, robot, sus)
+    print KkEnv
+    print stateKkEnv
+
+    # CALCULATING Kr
+    print "Calculating K_r..."
+    res_Kr = scipy.optimize.minimize(FindKr, states[2:3]+states[4:robot.numLinks()], args=(robot,sus,task_sphere_rad), bounds=bnds)
+    stateKr = res_Kr.x
+    kR = -FindKr(stateKr, robot, sus, task_sphere_rad)
+    print kR
+    print stateKr
 
     # CALCULATING MAX K_G OF dg_i/dx_j MATRIX (qroll, qpitch, 4 DOF + velocities)
     # print "Calculating Kg..."
