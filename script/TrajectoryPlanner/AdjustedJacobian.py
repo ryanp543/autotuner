@@ -39,16 +39,22 @@ class AdjustedJacobian():
         self.l4 = l4
 
 
-    def cos(self, angle):
-        return math.cos(angle)
+    def cos(self, ang):
+        # cos_ts = math.cos(ang)
+        cos_ts = 1 - (ang**2)/math.factorial(2) + (ang**4)/math.factorial(4) - (ang**6)/math.factorial(6) \
+                 + (ang**8)/math.factorial(8)
+        return cos_ts
 
 
-    def sin(self, angle):
-        return math.sin(angle)
+    def sin(self, ang):
+        # sin_ts = math.sin(ang)
+        sin_ts = ang - (ang**3)/math.factorial(3) + (ang**5)/math.factorial(5) - (ang**7)/math.factorial(7) \
+                 + (ang**9)/math.factorial(9)
+        return sin_ts
 
 
     def getForwardKinematics(self, pos):
-        # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
+        # full state: (x, y, z, qyaw, qpitch, qroll, q1, q2, q3, q4)
         lcx = self.lcx
         lcy = self.lcy
         lcz = self.lcz
@@ -57,8 +63,8 @@ class AdjustedJacobian():
         l3 = self.l3
         l4 = self.l4
         qz = pos[2]
-        qr = pos[4]
-        qp = pos[5]
+        qp = pos[4]
+        qr = pos[5]
         q1 = pos[6]
         q2 = pos[7]
         q3 = pos[8]
@@ -66,14 +72,13 @@ class AdjustedJacobian():
         cos = self.cos
 
 
-        x_arm = -l4*(cos(q1)*cos(q2)*sin(q3)+cos(q1)*cos(q3)*sin(q2)) - l3*cos(q1)
-        y_arm = -l2 - l4*(cos(q2)*sin(q1)*sin(q3)+cos(q3)*sin(q1)*sin(q2)) - l3*sin(q1)
-        z_arm = l1 + l4*(cos(q2)*cos(q3)-sin(q2)*sin(q3))
+        x_arm = l2*sin(q1) - l3*cos(q1)*cos(q2) - l4*(cos(q1)*cos(q2)*sin(q3)+cos(q1)*cos(q3)*sin(q2))
+        y_arm = -l2*cos(q1) - l3*cos(q2)*sin(q1) - l4*(cos(q2)*sin(q1)*sin(q3)+cos(q3)*sin(q1)*sin(q2))
+        z_arm = l1 - l3*sin(q2) + l4*(cos(q2)*cos(q3)-sin(q2)*sin(q3))
 
-        x = sin(qp)*z_arm + cos(qp)*x_arm + lcx*cos(qp) + lcz*sin(qp)
-        y = lcx*sin(qp)*sin(qr) + sin(qp)*sin(qr)*x_arm - cos(qp)*sin(qr)*z_arm + cos(qr)*y_arm - lcy*cos(qr)
-        z = -cos(qr)*sin(qp)*x_arm + sin(qr)*y_arm + cos(qp)*cos(qr)*z_arm + lcz*cos(qp)*cos(qr) - lcx*cos(qr)*sin(qp) \
-            - lcy*sin(qr)
+        x = cos(qp)*(lcx+x_arm) + cos(qr)*sin(qp)*(lcz+z_arm) - sin(qp)*sin(qr)*(lcy-y_arm)
+        y = -sin(qr)*(lcz+z_arm) - cos(qr)*(lcy-y_arm)
+        z = qz + cos(qp)*cos(qr)*(lcz+z_arm) - sin(qp)*(lcx+x_arm) - cos(qp)*sin(qr)*(lcy-y_arm)
         print x, y, z
 
 
@@ -95,13 +100,13 @@ if __name__ == "__main__":
     # joint 4: -1.571 to 1.571
 
 
-    # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
+    # full state: (x, y, z, qyaw, qpitch, qroll, q1, q2, q3, q4)
     x_init = [0] * robot.numLinks()
     dx_init = [0.1] * robot.numLinks()
     states = x_init + dx_init
 
     n = -math.pi/4
-    x_init = [0, 0, 0, 0, 0, 0, 0, n, n, n]
+    x_init = [0, 0, 0.3, 0, n, n, n, n, n, n]
 
     robot.setConfig(x_init)
     link4 = robot.link(robot.numLinks()-1)

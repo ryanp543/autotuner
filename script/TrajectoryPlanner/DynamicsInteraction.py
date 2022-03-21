@@ -58,72 +58,54 @@ def FindMaxEigH(var_init, robot, sus):
     return -max(w)
 
 
-def FindMaxEigKenv(var_init, robot, sus):
-    state = [0, 0, var_init[0], 0]
-    state.extend(var_init[1:])
-    robot.setConfig(state)
-    link4 = robot.link(robot.numLinks()-1)
-    J = np.asarray(link4.getPositionJacobian([0,0,0]))
-    J = np.delete(J, [0,1,2,3,7], 1)
-    J_trans = np.transpose(J)
-    Kenv_rob = np.linalg.multi_dot([J_trans, Kenv, J])
-    w, v = np.linalg.eig(Kenv_rob)
-
-    return -max(w)
-
-
-def FindKkEnv(var_init, robot, sus):
-    list_dKenvdx = []
+def FindKtau(var_init, robot, sus, contact_pt):
+    list_dtaudx = []
     list_max = []
 
-    x = [0, 0, 0, 0] + list(var_init[0:len(var_init)])  # roll pitch 4dof
+    x = [0, 0, var_init[0], 0] + list(var_init[1:len(var_init)])  # roll pitch 4dof
     dx = 0.001 # [0, 0, 0, 0] + list(var_init[len(var_init)/2:len(var_init)])
     x_original = x[:]
 
-    # For each relevant passive state derivative
-    for k in range(4, len(x)):
+    for j in range(4, len(x)):
         x = x_original[:]
 
         robot.setConfig(x)
         J1 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
         J1 = np.delete(J1, [0,1,2,3,9], 1)
         J1_trans = np.transpose(J1)
-        Kenv_rob1 = np.linalg.multi_dot([J1_trans, Kenv, J1])
+        pos1 = link4.getWorldPosition([0,0,0])
 
-        x[k] = x[k] + dx
+        # full joint coord: (qroll, qpitch, q1, q2, q3)
+        tau_ext1 = -np.linalg.multi_dot([J1_trans, Kenv, pos1-contact_pt])
+
+        x[j] = x[j] + dx
+
         robot.setConfig(x)
         J2 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
         J2 = np.delete(J2, [0,1,2,3,9], 1)
         J2_trans = np.transpose(J2)
-        Kenv_rob2 = np.linalg.multi_dot([J2_trans, Kenv, J2])
+        pos2 = link4.getWorldPosition([0, 0, 0])
 
-        for i in range(len(Kenv_rob1)):
-            for j in range(len(Kenv_rob1[0])):
-                dKenv_rob = Kenv_rob2[i][j]-Kenv_rob1[i][j]
-                list_dKenvdx.append(abs(dKenv_rob/dx))  # 1D array of dK/dx for x[elem]
+        tau_ext2 = -np.linalg.multi_dot([J2_trans, Kenv, pos2-contact_pt])
 
-        list_max.append(max(list_dKenvdx))
-        list_dKenvdx = []
+        for i in range(len(tau_ext1)):
+            dtaudx = abs((tau_ext2[i]-tau_ext1[i])/dx)
+            list_dtaudx.append(dtaudx)
 
-    return -len(var_init)*max(list_max)
+        list_max.append(np.amax(list_dtaudx))
+        list_dtaudx = []
 
-
-def FindKr(rad_init, robot, sus):
+    return -max(list_max)
 
 
-    state = [0, 0, var_init[0], 0]
-    state.extend(var_init[1:])
-    robot.setConfig(state)
-    link4 = robot.link(robot.numLinks()-1)
-    J = np.asarray(link4.getPositionJacobian([0,0,0]))
-    # print np.shape(J)
-    J = np.delete(J, [0,1,2,3,4,5,9], 1)
-    J_pseudo = np.linalg.inv(J)
-    # J_trans = np.transpose(J)
-    # J_pseudo = np.dot(J_trans, np.linalg.inv(np.dot(J, J_trans)))
-    J_pseudo_rowsum = np.abs(np.sum(J_pseudo, axis=1))
+def constraint_fun(var_init):
+    x = [0, 0, var_init[0], 0] + list(var_init[1:len(var_init)])
+    robot.setConfig(x)
+    pos = link4.getWorldPosition([0, 0, 0])
+    dist_vec = np.asarray(pos - contact_pt)
+    dist_mag = np.linalg.norm(dist_vec)
 
-    return -np.amax(J_pseudo_rowsum)*radius
+    return dist_mag
 
 
 # Function: Main
@@ -139,8 +121,28 @@ if __name__ == "__main__":
     print "Number of DOFs: " + str(robot.numLinks())
     print "Number of Links: " + str(robot.numDrivers())
 
-    link4 = robot.link(9)
-    print link4.getID()
+    # Getting the end effector link of the robot assembly
+    link4 = robot.link(robot.numLinks()-1)
+
+    # Extract current data from the .csv file generated from GenerateConstants.py
+    c, _, _ = ExtractData_GainBounds()
+    maxEigH, minEigH, maxG, kG, kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, kC, k, total_mass =\
+        c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13]
+
+    # Initializing environmental stiffness matrix
+    Kenv = np.asarray([[100, 0, 0], [0, 100, 0], [0, 0, 100]])
+
+    # Define contact point
+    contact_pt = np.asarray([0.542, -0.10475, 0])
+
+    # Initializing lower and upper bounds of robot DOFs
+    lowerbounds = [-0.1, -np.pi/4, -np.pi/4, -np.pi, -np.pi, -1.0472, 0]
+    upperbounds = [0.1, np.pi/4, np.pi/4, np.pi, 0, 2.6, 0]
+    bnds = scipy.optimize.Bounds(lowerbounds, upperbounds)
+
+    # Initializing constraint based on sphere of task space
+    task_sphere_rad = 0.1
+    cf = scipy.optimize.NonlinearConstraint(constraint_fun, 0, task_sphere_rad)
 
     # Initializing state vectors
     # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
@@ -148,50 +150,30 @@ if __name__ == "__main__":
     dx_init = [0.1] * robot.numLinks()
     states = x_init + dx_init
 
-    # Initializing sphere radius vector
-    task_sphere_rad = 0.1
-    xr_init = [0, 0, task_sphere_rad]
+    # CALCULATING Ktau (qroll, qpitch, 4 DOF) states[4:robot.numLinks()]
+    print "Calculating K_tau..."
+    res_Ktau = scipy.optimize.minimize(FindKtau, states[2:3]+states[4:robot.numLinks()], args=(robot,sus,contact_pt),
+                                       bounds=bnds, constraints=cf)
+    stateKtau = res_Ktau.x
+    kTau = -FindKtau(stateKtau, robot, sus, contact_pt)
+    print kTau
 
-    # Initializing environmental stiffness matrix
-    Kenv = np.asarray([[70, 0, 0], [0, 70, 0], [0, 0, 70]])
+    # Adjusting k
+    k = k + k_tau
 
-    # Initializing lower and upper bounds of robot DOFs
-    lowerbounds = [-0.1, -np.pi/4, -np.pi/4, -np.pi, -np.pi, -1.0472, 0]
-    upperbounds = [0.1, np.pi/4, np.pi/4, np.pi, 0, 2.6, 0]
-    bnds = scipy.optimize.Bounds(lowerbounds, upperbounds)
+    # CALCULATING ALPHA BOUNDS
+    alphas = []
+    alpha1 = ((minEigK_p - k) / maxEigH) ** 0.5
+    alphas.append(alpha1)
 
-    # CALCULATING MAX ROW SUM OF JACOBIAN TRANSPOSE (z, qroll, qpitch, 4 DOF) states[2:3]+states[4:robot.numLinks()]
-    print "Calculating max row sum of Jacobian transpose..."
-    res_maxEigKenv = scipy.optimize.minimize(FindMaxEigKenv, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), bounds=bnds) # callback=fminCallback)
-    stateMaxEigKenv = res_maxEigKenv.x
-    maxEigKenv = -FindMaxEigKenv(stateMaxEigKenv, robot, sus)
-    print maxEigKenv
+    print alpha1
 
-    # CALCULATING K_k,env
-    print "Calculating K_k,env..."
-    stateKkEnv = scipy.optimize.fmin(FindKkEnv, states[4:robot.numLinks()], args=(robot,sus), maxiter=1500)
-    KkEnv = -FindKkEnv(stateKkEnv, robot, sus)
-    print KkEnv
-    print stateKkEnv
+    alpha2 = symbols('alpha2')
+    eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p
+    sol = solve(eq)
+    for k in range(len(sol)):
+        alphas.append(sol[k])
 
-    # CALCULATING Kr
-    print "Calculating K_r..."
-    FindKr(xr_init, robot, sus)
-    # res_Kr = scipy.optimize.minimize(FindKr, states[2:3]+states[4:robot.numLinks()], args=(robot,sus,task_sphere_rad), bounds=bnds)
-    # stateKr = res_Kr.x
-    # kR = -FindKr(stateKr, robot, sus, task_sphere_rad)
-    # print kR
+    
 
-    # CALCULATING MAX K_G OF dg_i/dx_j MATRIX (qroll, qpitch, 4 DOF + velocities)
-    # print "Calculating Kg..."
-    # CURRENT_FUNCTION = FindKg
-    # stateMaxKg = scipy.optimize.fmin(FindKg, states[4:robot.numLinks()], args=(robot,sus), maxiter=4000) # callback=fminCallback) +states[14:20]
-    # kG = -FindKg(stateMaxKg, robot, sus)
-
-    # CALCULATING MAX EIGEN VALUE OF H MATRIX (z, qroll, qpitch, 4 DOF)
-    # print "Calculating Max Eig H..."
-    # CURRENT_FUNCTION = FindMaxEigH
-    # stateMaxEigH = scipy.optimize.fmin(FindMaxEigH, states[2:3]+states[4:robot.numLinks()], args=(robot,sus), maxiter=1500) # callback=fminCallback)
-    # maxEigH = -FindMaxEigH(stateMaxEigH, robot, sus)
-    # print maxEigH
 
