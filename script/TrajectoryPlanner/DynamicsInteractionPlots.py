@@ -77,17 +77,21 @@ def ExtractInteractionData():
     radius_list = []
     stiffness_list = []
     kTau_list = []
+    maxTau_list = []
+    maxPs_list = []
     k_list = []
 
     for k in range(1, len(data)):
         radius_list.append(float(data[k][0]))
         stiffness_list.append(float(data[k][1]))
         kTau_list.append(float(data[k][2]))
-        k_list.append(float(data[k][3]))
+        maxTau_list.append(float(data[k][3]))
+        maxPs_list.append(float(data[k][4]))
+        k_list.append(float(data[k][5]))
 
 
     # Returns radius, stiffness, kTau, k lists
-    return radius_list, stiffness_list, kTau_list, k_list
+    return radius_list, stiffness_list, kTau_list, maxTau_list, maxPs_list, k_list
 
 
 # Function: Get Xi
@@ -100,7 +104,8 @@ def GetXi(x_p, dx_p, x_a, dx_a, sus):
          0.5 * K_D * (dx_a ** 2) + \
          -0.5 * ((alpha ** 2) * minEigH) * ((x_p ** 2) + (x_a ** 2)) + \
          total_mass * 9.81 * x_p + \
-         maxG * np.sqrt((x_p ** 2) + (x_a ** 2))
+         maxG * np.sqrt((x_p ** 2) + (x_a ** 2)) + \
+         maxTau * np.sqrt((x_p ** 2) + (x_a ** 2)) # - maxPs
     return xi
 
 
@@ -328,7 +333,11 @@ if __name__ == "__main__":
         c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13]
 
     # Extract lists of constants adjusted by the variations of mass
-    radius_list, stiffness_list, kTau_list, k_list = ExtractInteractionData()
+    radius_list, stiffness_list, kTau_list, maxTau_list, maxPs_list, k_list = ExtractInteractionData()
+
+    # Set maxTau and maxPs
+    maxTau = maxTau_list[-1]
+    maxPs = maxPs_list[-1]
 
     # Set PID gains based on variation in masses (I gain and alphas held constant)
     # K_P, K_I, K_D = gains[0], gains[1], gains[2] # default .csv values
@@ -343,8 +352,8 @@ if __name__ == "__main__":
         # K_D = alpha * maxEigH
             
         # Or make the PD gains constant
-        K_P = gains[0] + 20 # 88.6
-        K_D = gains[2]
+        K_P = 111 # gains[0] + 20 # 88.6
+        K_D = 13.5 # 13.5 # gains[2]
 
         K_P_list.append(K_P)
         K_D_list.append(K_D)
@@ -353,7 +362,7 @@ if __name__ == "__main__":
     curve_p_total = []
     curve_a_total = []
     first_time = True
-    for n in range(0, 3):
+    for n in range(0, len(radius_list)):
         print "Radius: " + str(radius_list[n])
         print "Stiffness: " + str(stiffness_list[n])
         kTau, k = kTau_list[n], k_list[n]
@@ -394,11 +403,10 @@ if __name__ == "__main__":
 
         curve_a = PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus)
         curve_a_total.append(curve_a)
-        print curve_a
 
         # Close generated contour plots
-        # if n != len(radius_list)-1:
-        #     plt.close("all")
+        if n != len(radius_list)-1:
+            plt.close("all")
 
     # Then set up new 3d figure to plot all the curves
     plt.rc('font', size=10)

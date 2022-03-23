@@ -108,6 +108,28 @@ def constraint_fun(var_init):
     return dist_mag
 
 
+def FindMaxTau(var_init, robot, sus, contact_pt, Kenv):
+    x = [0, 0, var_init[0], 0]
+    x.extend(var_init[1:])
+    robot.setConfig(x)
+    pos = link4.getWorldPosition([0, 0, 0])
+
+    J = np.asarray(link4.getPositionJacobian([0,0,0]))
+    J = np.delete(J, [0,1,2,3,9], 1)
+    J_trans = np.transpose(J)
+
+    tau_ext = -np.linalg.multi_dot([J_trans, Kenv, pos - contact_pt])
+
+    return -np.linalg.norm(tau_ext)
+
+
+def FindMaxPs(robot, sus, contact_pt, Kenv, task_sphere_rad):
+    maxrowsum = np.amax(np.sum(Kenv, axis=1))
+
+    return 0.5 * maxrowsum * (task_sphere_rad**2)
+
+
+
 def GetConstants(robot, sus, Kenv, contact_pt, task_sphere_rad):
     # Initializing state vectors
     # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
@@ -133,7 +155,19 @@ def GetConstants(robot, sus, Kenv, contact_pt, task_sphere_rad):
     kTau = -res_Ktau.fun
     print res_Ktau.message
 
-    return kTau, res_Ktau.success
+    # Calculating maxTau
+    print "Calculating max tau_d..."
+    res_maxTau = scipy.optimize.minimize(FindMaxTau, states[2:3] + states[4:robot.numLinks()],
+                                         args=(robot, sus, contact_pt, Kenv),
+                                         bounds=bnds, constraints=cf)
+    stateMaxTau = res_maxTau.x
+    maxTau = -res_maxTau.fun
+
+    # Calculating maxPs
+    print "Calculating max Ps..."
+    maxPs = FindMaxPs(robot, sus, contact_pt, Kenv, task_sphere_rad)
+
+    return kTau, maxTau, maxPs, res_Ktau.success
 
 
 # Function: Main
@@ -171,10 +205,14 @@ if __name__ == "__main__":
 
     with open(FILEPATH_INTERACTION_CSV, 'w') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
-        csvwriter.writerow(["task_radius", "stiffness", "kTau", "k", "alpha1", "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"])
+        csvwriter.writerow(["task_radius", "stiffness", "kTau", "maxTau", "maxPs", "k", "alpha1",
+                            "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"])
 
-        for task_radius in task_radius_list:
-        # for stiffness in stiffness_list:
+        # for task_radius in task_radius_list:
+        for stiffness in stiffness_list:
+            print "Task radius: " + str(task_radius)
+            print "Stiffness: " + str(stiffness)
+
             # Set K_environment stiffness
             K_environment = np.asarray([[stiffness, 0, 0], [0, stiffness, 0], [0, 0, stiffness]])
 
@@ -182,15 +220,15 @@ if __name__ == "__main__":
             k_orig = k
 
             # Get constants, adjust k
-            kTau, success = GetConstants(robot, sus, K_environment, contact_pt, task_radius)
+            kTau, maxTau, maxPs, success = GetConstants(robot, sus, K_environment, contact_pt, task_radius)
             k = k + kTau
-            print kTau
+            # print kTau
 
             # CALCULATING ALPHA BOUNDS
             alphas = []
             alpha1 = ((minEigK_p - k) / maxEigH) ** 0.5
             alphas.append(alpha1)
-            print alpha1
+            # print alpha1
 
             alpha2 = symbols('alpha2')
             eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p
@@ -199,7 +237,7 @@ if __name__ == "__main__":
                 alphas.append(sol[m])
 
             if success:
-                csvwriter.writerow([task_radius, stiffness, kTau, k] + alphas)
+                csvwriter.writerow([task_radius, stiffness, kTau, maxTau, maxPs, k] + alphas)
 
             # Reset k
             k = k_orig
