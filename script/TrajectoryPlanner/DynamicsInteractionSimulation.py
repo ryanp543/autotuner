@@ -77,7 +77,7 @@ def forward_sim_step(xp, dxp, xa, dxa, xp_d, dxp_d, xa_d, dx_d):
     B = np.concatenate((B_top, B_bottom), axis=0)
 
     # Create I vector
-    
+
     I_top = -np.dot(Ks_mat, xp_d)
 
 
