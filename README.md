@@ -8,7 +8,8 @@ The files provided in this repository are intended to be placed into a ROS packa
 
 ![alt text](/flowchart.JPG?raw=true)
 
-These open-sourced scripts are associated with the following paper: (To be added soon hopefully)
+These open-sourced scripts are associated with the following paper: 
+Marc-André Bégin, Ryan Poon, and Ian Hunter. (2021) Streamlined Tuning Procedure for Stable PID Control of Flexible-Base Manipulators. IEEE Robotics and Automation Letters, vol. 6, no. 4, pp. 7413–7420.
 
 * [Requirements](#Requirements)
 * [Autotuner Inputs](#Autotuner-Inputs)
