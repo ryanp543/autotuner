@@ -22,7 +22,7 @@ from SuspensionMatrices import Suspension_8legs
 
 # NOTE: Edit for specific robot
 FILEPATH = './robot_sim.xml'
-FILEPATH_MASS_CSV = './DynamicsMassConstants.csv'
+FILEPATH_INTERACTION_CSV = './DynamicsInteractionConstants.csv'
 FILEPATH_DEFAULT_CSV = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
@@ -58,7 +58,7 @@ def FindMaxEigH(var_init, robot, sus):
     return -max(w)
 
 
-def FindKtau(var_init, robot, sus, contact_pt):
+def FindKtau(var_init, robot, sus, contact_pt, Kenv):
     list_dtaudx = []
     list_max = []
 
@@ -108,6 +108,34 @@ def constraint_fun(var_init):
     return dist_mag
 
 
+def GetConstants(robot, sus, Kenv, contact_pt, task_sphere_rad):
+    # Initializing state vectors
+    # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
+    x_init = [0] * robot.numLinks()
+    dx_init = [0.1] * robot.numLinks()
+    states = x_init + dx_init
+
+
+    # Initializing lower and upper bounds of robot DOFs
+    lowerbounds = [-0.1, -np.pi / 4, -np.pi / 4, -np.pi, -np.pi, -1.0472, 0]
+    upperbounds = [0.1, np.pi / 4, np.pi / 4, np.pi, 0, 2.6, 0]
+    bnds = scipy.optimize.Bounds(lowerbounds, upperbounds)
+
+    # Initialize nonlinear constraint based on task sphere radius
+    cf = scipy.optimize.NonlinearConstraint(constraint_fun, 0, task_sphere_rad)
+
+    # CALCULATING Ktau (qroll, qpitch, 4 DOF) states[4:robot.numLinks()]
+    print "Calculating K_tau..."
+    res_Ktau = scipy.optimize.minimize(FindKtau, states[2:3] + states[4:robot.numLinks()],
+                                       args=(robot, sus, contact_pt, Kenv),
+                                       bounds=bnds, constraints=cf)
+    stateKtau = res_Ktau.x
+    kTau = -res_Ktau.fun
+    print res_Ktau.message
+
+    return kTau, res_Ktau.success
+
+
 # Function: Main
 # Running this main function will generate the constants and alpha bounds and then output a .csv file containing these
 # values (for future plotting, etc).
@@ -129,50 +157,54 @@ if __name__ == "__main__":
     maxEigH, minEigH, maxG, kG, kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, kC, k, total_mass =\
         c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13]
 
+
     # Initializing environmental stiffness matrix
-    Kenv = np.asarray([[100, 0, 0], [0, 100, 0], [0, 0, 100]])
+    stiffness = 100
+    stiffness_list = [x * 1 for x in range(1, 301)]
 
     # Define contact point
     contact_pt = np.asarray([0.542, -0.10475, 0])
 
-    # Initializing lower and upper bounds of robot DOFs
-    lowerbounds = [-0.1, -np.pi/4, -np.pi/4, -np.pi, -np.pi, -1.0472, 0]
-    upperbounds = [0.1, np.pi/4, np.pi/4, np.pi, 0, 2.6, 0]
-    bnds = scipy.optimize.Bounds(lowerbounds, upperbounds)
-
     # Initializing constraint based on sphere of task space
-    task_sphere_rad = 0.1
-    cf = scipy.optimize.NonlinearConstraint(constraint_fun, 0, task_sphere_rad)
+    task_radius = 0.1
+    task_radius_list = [x * 0.002 for x in range(1, 201)]
 
-    # Initializing state vectors
-    # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
-    x_init = [0] * robot.numLinks()
-    dx_init = [0.1] * robot.numLinks()
-    states = x_init + dx_init
+    with open(FILEPATH_INTERACTION_CSV, 'w') as myfile:
+        csvwriter = csv.writer(myfile, delimiter=',')
+        csvwriter.writerow(["task_radius", "stiffness", "kTau", "k", "alpha1", "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"])
 
-    # CALCULATING Ktau (qroll, qpitch, 4 DOF) states[4:robot.numLinks()]
-    print "Calculating K_tau..."
-    res_Ktau = scipy.optimize.minimize(FindKtau, states[2:3]+states[4:robot.numLinks()], args=(robot,sus,contact_pt),
-                                       bounds=bnds, constraints=cf)
-    stateKtau = res_Ktau.x
-    kTau = -FindKtau(stateKtau, robot, sus, contact_pt)
-    print kTau
+        for task_radius in task_radius_list:
+        # for stiffness in stiffness_list:
+            # Set K_environment stiffness
+            K_environment = np.asarray([[stiffness, 0, 0], [0, stiffness, 0], [0, 0, stiffness]])
 
-    # Adjusting k
-    k = k + k_tau
+            # Save k value
+            k_orig = k
 
-    # CALCULATING ALPHA BOUNDS
-    alphas = []
-    alpha1 = ((minEigK_p - k) / maxEigH) ** 0.5
-    alphas.append(alpha1)
+            # Get constants, adjust k
+            kTau, success = GetConstants(robot, sus, K_environment, contact_pt, task_radius)
+            k = k + kTau
+            print kTau
 
-    print alpha1
+            # CALCULATING ALPHA BOUNDS
+            alphas = []
+            alpha1 = ((minEigK_p - k) / maxEigH) ** 0.5
+            alphas.append(alpha1)
+            print alpha1
 
-    alpha2 = symbols('alpha2')
-    eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p
-    sol = solve(eq)
-    for k in range(len(sol)):
-        alphas.append(sol[k])
+            alpha2 = symbols('alpha2')
+            eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p
+            sol = solve(eq)
+            for m in range(len(sol)):
+                alphas.append(sol[m])
+
+            if success:
+                csvwriter.writerow([task_radius, stiffness, kTau, k] + alphas)
+
+            # Reset k
+            k = k_orig
+
+    print "\nCSV file generated, script complete"
 
     
 
