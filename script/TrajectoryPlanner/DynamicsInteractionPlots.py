@@ -19,6 +19,7 @@ import matplotlib.patches as mpatches
 from sympy import symbols, Eq, solve
 from matplotlib import colors, cm
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 
 import GenerateGainBounds as GGB
 from SuspensionMatrices import Suspension_8legs
@@ -26,7 +27,7 @@ from SuspensionMatrices import Suspension_8legs
 # CONSTANTS AND FILEPATHS
 # Change filepath location path to your GenerateGainsConstants.csv (as if you were running this code from the
 # Trajectory Planner directory
-FILEPATH_INTERACTION_CSV = './DynamicsInteractionRadiusConstants.csv'
+FILEPATH_INTERACTION_CSV = './DynamicsInteractionStiffConstants.csv'
 FILEPATH_DEFAULT_CSV = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
@@ -174,7 +175,7 @@ def PlotContourFigure(x_p, dx_p, x_a, dx_a, sus):
                 minEigK_p[ii,jj], minEigB_p[ii,jj] = FindMinEigKB_passive(x_p[jj], sus)
             Xi[ii,jj] = GetXi(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], sus)
             L[ii,jj] = GetL(x_p[jj], dx_p[ii], x_a[jj], dx_a[ii], minEigK_p[ii,jj], minEigB_p[ii,jj], sus)
-    print kTau
+
     # If first time generating minEigK_p and minEigB_p, no need to calculate for rest of script
     if first_time:
         first_time = False
@@ -288,7 +289,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_a
         dx = dx_a
         labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
-        # setlevels = [300, 1000, 2000]
+        setlevels = [500, 1500, 2500]
         x_ticks = np.arange(0.5, 3, 1)
         y_ticks = np.arange(0.0, 12, 2.5)
         # plt.text(-0.02, 1, '(b)', fontsize=20)
@@ -296,7 +297,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_p
         dx = dx_p
         labels = [r"$||\tilde{x}_p||$", r"$||\dot{\tilde{x}}_p||$"]
-        # setlevels = [500, 1500]
+        setlevels = [300, 1000, 2000]
         x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
         y_ticks = np.arange(0.0, 2.5, 0.5) # 1
         # plt.text(-0.25, 12, '(a)', fontsize=20)
@@ -304,7 +305,7 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
     plt.locator_params(nbins=10)
     cs_xi_lim = ax.contour(x, dx, Xi, levels=[0, float(xi_limit)], colors='black', linestyles='dashed', linewidths=3)
 
-    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3) # , levels=setlevels)
+    cs_xi = ax.contour(x, dx, Xi, colors='black', linewidths=3, levels=setlevels)
     cs_l_s = ax.contourf(x, dx, Xi, levels=[0, xi_limit], cmap=cmap_stable, norm=norm_stable)
     cs_l_us = ax.contourf(x, dx, L, levels=0, cmap=cmap_unstable, norm=norm_unstable, alpha=0.7)
 
@@ -350,13 +351,16 @@ if __name__ == "__main__":
         # # Calculate PD gains and add to the list
         # K_P = (alpha ** 2) * maxEigH + kG + (1 / alpha) * K_I + kTau_list[index]
         # K_D = alpha * maxEigH
-            
+
         # Or make the PD gains constant
-        K_P = 111 # gains[0] + 20 # 88.6
-        K_D = 13.5 # 13.5 # gains[2]
+        K_P = 96 # gains[0] + 20 # 88.6
+        K_D = 13.6 # 13.5 # gains[2]
 
         K_P_list.append(K_P)
         K_D_list.append(K_D)
+
+    # 100 N/m stiffness environment: PID = 95.73, 20, 13.5
+    #
 
     # Retrieves curves of all xi_limit lines in preparation for 3D plottings
     curve_p_total = []
@@ -369,22 +373,6 @@ if __name__ == "__main__":
         K_P = K_P_list[n]
         K_D = K_D_list[n]
 
-        # # Plot stability region when active states are held at zero
-        # x_p = np.linspace(0, 0.6, 60)
-        # dx_p = np.linspace(0, 2, 60)
-        # x_a = np.zeros(np.size(x_p))
-        # dx_a = np.zeros(np.size(dx_p))
-        #
-        # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
-        #
-        # # Plot stability region when passive states are held at zero
-        # x_a = np.linspace(0, 3, 60)
-        # dx_a = np.linspace(0, 10, 60)
-        # x_p = np.zeros(np.size(x_a))
-        # dx_p = np.zeros(np.size(dx_a))
-        #
-        # PlotContourFigure(x_p, dx_p, x_a, dx_a, sus)
-
         # Plotting curves of each added mass value
         # Plot stability region when active states are held at zero
         x_p = np.linspace(0, 0.6, 60) # (0, 0.6, 120)
@@ -396,8 +384,8 @@ if __name__ == "__main__":
         curve_p_total.append(curve_p)                               # note curve_p_total is a list of np.array objects
 
         # Plot stability region when passive states are held at zero
-        x_a = np.linspace(0, 3, 60) # (0, 6, 120)
-        dx_a = np.linspace(0, 10, 60) # (0, 20, 120)
+        x_a = np.linspace(0, 6, 60) # (0, 6, 120)
+        dx_a = np.linspace(0, 20, 60) # (0, 20, 120)
         x_p = np.zeros(np.size(x_a))
         dx_p = np.zeros(np.size(dx_a))
 
@@ -414,21 +402,21 @@ if __name__ == "__main__":
     fig_3d_passive = plt.figure()
     ax_passive = fig_3d_passive.gca(projection='3d')
     ax_passive.set_xlabel(r"$||\tilde{x}_p||$")
-    ax_passive.set_ylabel("Task Sphere Radius (m)")
+    ax_passive.set_ylabel("Environment Stiffness (N/m)")
     ax_passive.set_zlabel(r"$||\dot{\tilde{x}}_p||$")
     ax_passive.set_xlim(0.0, 0.6) # position mag
-    ax_passive.set_ylim(0.0, 0.4) # radius
+    ax_passive.set_ylim(0.0, 300) # radius is (0.0, 0.4)
     ax_passive.set_zlim(0.0, 2.0) # velocity mag
     ax_passive.invert_yaxis()
 
     fig_3d_active = plt.figure()
     ax_active = fig_3d_active.gca(projection='3d')
     ax_active.set_xlabel(r"$||\tilde{x}_a||$")
-    ax_active.set_ylabel("Task Sphere Radius (m)")
+    ax_active.set_ylabel("Environment Stiffness (N/m)")
     ax_active.set_zlabel(r"$||\dot{\tilde{x}}_a||$")
-    ax_active.set_xlim(0.0, 3.0) # position mag
-    ax_active.set_ylim(0.0, 0.4) # radius
-    ax_active.set_zlim(0.0, 10.0) # velocity mag
+    ax_active.set_xlim(0.0, 6.0) # position mag
+    ax_active.set_ylim(0.0, 300) # radius is (0.0, 0.4)
+    ax_active.set_zlim(0.0, 20.0) # velocity mag
     ax_active.invert_yaxis()
 
     # x_p, y_p, z_p, x_a, y_a, z_a = [], [], [], [], [], []
@@ -447,17 +435,27 @@ if __name__ == "__main__":
         # if len(curve_p_total[m][:, 0]) != 2:
         x_p = curve_p_total[m][:, 0] # This gives x
         z_p = curve_p_total[m][:, 1] # This gives dx
-        y_p = radius_list[m] * np.ones(np.size(x_p))
+        y_p = stiffness_list[m] * np.ones(np.size(x_p))
 
         ax_passive.plot(x_p, y_p, z_p)
 
         # Plot active state curves
         # if len(curve_a_total[m][:,0]) != 2:
+        # if m < 120:
         x_a = curve_a_total[m][:, 0] # This gives x
         z_a = curve_a_total[m][:, 1] # This gives dx
-        y_a = radius_list[m] * np.ones(np.size(x_a))
+        y_a = stiffness_list[m] * np.ones(np.size(x_a))
 
         ax_active.plot(x_a, y_a, z_a)
+
+        # Square where the selected stability region is
+        if m == 100:
+            points = np.array([[0, 100, 0], [6, 100, 0], [6, 100, 20], [0, 100, 20]])
+            x_square = [0, 6, 6, 0, 0]
+            y_square = [100, 100, 100, 100, 100]
+            z_square = [0, 0, 20, 20, 0]
+            ax_active.plot(x_square, y_square, z_square, linewidth=4, color='r')
+
 
     # surf_p = ax_passive.plot_trisurf(x_p, y_p, z_p)
     # surf_a = ax_active.plot_trisurf(x_a, y_a, z_a)

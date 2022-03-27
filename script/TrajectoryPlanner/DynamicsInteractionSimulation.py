@@ -32,7 +32,15 @@ def getXpTarget(x_p, x_a_target, dx_a_target):
     G = robot.getGravityForces([0, 0, -9.81])
     K = np.asarray(sus.GetStiffnessMatrix(z=x_p[0], qPitch=x_p[1], qRoll=x_p[2]))
     G_p = np.array([G[2], G[4], G[5]])
-    v = G_p + np.dot(K, x_p)
+
+    J = np.asarray(ee_link.getPositionJacobian([0, 0, 0]))
+    J = np.delete(J, [0, 1, 3, 9], 1)
+    J_trans = np.transpose(J)
+    ee_pos = ee_link.getWorldPosition([0, 0, 0])
+    tau_ext = -np.linalg.multi_dot([J_trans, K_environment, ee_pos - contact_point])
+    tau_ext_p = tau_ext[:3]
+
+    v = G_p + np.dot(K, x_p) - tau_ext_p
     return np.dot(v, v)
 
 
@@ -77,7 +85,7 @@ def getJointsFromEE(ee_pos_des):
 # Function: Forward Simulation Step
 # Calculates the passive and active states and derivatives of the next time step
 # (x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d)
-def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD):
+def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD, Kenv, cont_pt):
     # State is [x y z yaw pitch roll 4DOF]
     x_config = np.concatenate(([0.0, 0.0], x[0], 0, x[1:], 0), axis=None)
     dx_config = np.concatenate(([0.0, 0.0], dx[0], 0, dx[1:], 0), axis=None)
@@ -117,8 +125,15 @@ def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD):
     I_bottom = -np.matmul(KI, a_hat)
     I = np.concatenate((I_top, I_bottom), axis=0)
 
+    # Create tau_ext vector
+    J = np.asarray(ee_link.getPositionJacobian([0, 0, 0]))
+    J = np.delete(J, [0, 1, 3, 9], 1)
+    J_trans = np.transpose(J)
+    ee_pos = ee_link.getWorldPosition([0, 0, 0])
+    tau_ext = -np.linalg.multi_dot([J_trans, Kenv, ee_pos - cont_pt])
+
     # Right hand side of dynamics equation (without inertial matrix inverse)
-    rhs = -c_vec - g_vec - np.matmul(K, x_err) - np.matmul(B, dx) + I
+    rhs = -c_vec - g_vec - np.matmul(K, x_err) - np.matmul(B, dx) + I + tau_ext
     (ddx, _, _, _) = np.linalg.lstsq(H_mat, rhs, rcond=None)
 
     # Kinematics calculations
@@ -134,7 +149,12 @@ def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD):
 
 # Function: Forward Simulation
 # Returns full list of passive and active states, derivatives, and errors for plotting given control input.
-def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD):
+def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD, Kenv):
+    # Calculate contact point from x_init
+    x_config = np.concatenate(([0.0, 0.0], x_init[0], 0, x_init[1:], 0), axis=None)
+    robot.setConfig(x_config)
+    contact = np.asarray(ee_link.getWorldPosition([0, 0, 0]))
+
     # Initializing passive and active states and derivatives
     x = np.asarray([x_init])
     dx = np.asarray([dx_init])
@@ -145,7 +165,8 @@ def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD
 
     for k in range(np.size(t)-1):
         # Calculate new states
-        x_new, dx_new, a_new, da_new = forwardSimStep(x[k], dx[k], a_hat[k], da_hat[k], x_d[k], dx_d[k], dt, KP, KI, KD)
+        x_new, dx_new, a_new, da_new = forwardSimStep(x[k], dx[k], a_hat[k], da_hat[k], x_d[k], dx_d[k],
+                                                      dt, KP, KI, KD, Kenv, contact)
 
         # Add to arrays
         x = np.append(x, [x_new], axis=0)
@@ -180,12 +201,16 @@ def calculateEndEffectorPosition(x):
     print("Calculating end effector position...")
 
     ee_pos_all = np.asarray([[0, 0 ,0]])
-    for k in range(np.shape(x)[0]):0
-        ee_pos, _ = getEndEffectorPos(x[k, 3:])
+    for k in range(np.shape(x)[0]):
+        x_config = np.concatenate(([0.0, 0.0], x[k, 0], 0, x[k, 1:], 0), axis=None)
+        robot.setConfig(x_config)
+        ee_pos = np.asarray(ee_link.getWorldPosition([0, 0, 0]))
 
         ee_pos_all = np.append(ee_pos_all, [ee_pos], axis=0)
 
-    print(np.shape(ee_pos_all))
+    ee_pos_all = np.delete(ee_pos_all, [0], 0)
+
+    return ee_pos_all
 
 
 def calculateEnergy(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, KP, KI, KD, alpha):
@@ -193,13 +218,14 @@ def calculateEnergy(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, KP, KI, KD, a
     print(np.shape(s))
 
 
-def plotResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
+def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     # Plot errors of all motors and passive joints
     fig = plt.figure(1, figsize=(10,22), dpi=80)
 
     ax = fig.add_subplot(6, 1, 1)
     plt.plot(t, x_err[:, 0])
     plt.ylabel(r"$z - {z}^{ref}$" + "\n(rad)") # + "\n"  + r"($10^{-2}$ rad)")
+    plt.title("Joint Position Error")
     plt.grid()
 
     ax = fig.add_subplot(6, 1, 2)
@@ -228,38 +254,52 @@ def plotResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.grid()
     plt.xlabel("Time (s)")
 
-    fig = plt.figure(2, figsize=(10,22), dpi=80)
+    fig2 = plt.figure(2, figsize=(10,22), dpi=80)
 
-    ax = fig.add_subplot(6, 1, 1)
+    ax = fig2.add_subplot(6, 1, 1)
     plt.plot(t, x[:, 0], color='green')
     plt.ylabel("z (rad)") # + "\n"  + r"($10^{-2}$ rad)")
+    plt.title("Joint Position")
     plt.grid()
 
-    ax = fig.add_subplot(6, 1, 2)
+    ax = fig2.add_subplot(6, 1, 2)
     plt.plot(t, x[:, 1], color='green')
     plt.ylabel(r"$\theta$ (rad)") # + "\n" + r"($10^{-2}$ rad)")
     plt.grid()
 
-    ax = fig.add_subplot(6, 1, 3)
+    ax = fig2.add_subplot(6, 1, 3)
     plt.plot(t, x[:, 2], color='green')
     plt.ylabel(r"$\phi$ (rad)") # + "\n" + r"($10^{-3}$ rad)")
     plt.grid()
 
-    ax = fig.add_subplot(6, 1, 4)
+    ax = fig2.add_subplot(6, 1, 4)
     plt.plot(t, x[:, 3], color='green')
     plt.ylabel(r"$q_1$ (rad)")
     plt.grid()
 
-    ax = fig.add_subplot(6, 1, 5)
+    ax = fig2.add_subplot(6, 1, 5)
     plt.plot(t, x[:, 4], color='green')
     plt.ylabel(r"$q_2$ (rad)")
     plt.grid()
 
-    ax = fig.add_subplot(6, 1, 6)
+    ax = fig2.add_subplot(6, 1, 6)
     plt.plot(t, x[:, 5], color='green')
     plt.ylabel(r"$q_3$ (rad)")
     plt.grid()
     plt.xlabel("Time (s)")
+
+
+def plotEEResults(ee_pos_all, t):
+    fig = plt.figure(3)
+
+    plt.plot(t, ee_pos_all[:, 0], color='red')
+    plt.plot(t, ee_pos_all[:, 1], color='green')
+    plt.plot(t, ee_pos_all[:, 2], color='blue')
+    plt.legend(["x", "y", "z"])
+    plt.title("End Effector X-Y-Z Position")
+    plt.ylabel("Position (m)")
+    plt.xlabel("Time (s)")
+    plt.grid()
 
 
 # Function: Main
@@ -277,9 +317,25 @@ if __name__ == "__main__":
     # Getting the end effector link of the robot assembly
     ee_link = robot.link(robot.numLinks() - 1)
 
+    # PID gain matrices
+    alpha = 0.5
+    P, I, D = 96.0, 20.0, 13.5
+    KP = np.asarray([[P, 0, 0], [0, P, 0], [0, 0, P]])
+    KI = np.asarray([[I, 0, 0], [0, I, 0], [0, 0, I]])
+    KD = np.asarray([[D, 0, 0], [0, D, 0], [0, 0, D]])
+
+    # Stiffness environment matrix
+    stiffness = 100
+    K_environment = np.asarray([[stiffness, 0, 0], [0, stiffness, 0], [0, 0, stiffness]])
+
+    # Create time parameters and axis
+    dt = 0.001
+    test_length = 10 # in seconds
+    t = np.asarray([n * dt for n in range(0, int(test_length/dt)+1)])
+
     # Comment out to calculate start position from contact_pt
-    # contact_pt = np.asarray([0.542, -0.10475, 0])
-    # x_init = getJointsFromEE(contact_pt)
+    contact_point = np.asarray([0.542, -0.10475, 0])
+    # x_init = getJointsFromEE(contact_point)
 
     # Initial state. Joint coords: [z pitch roll 3DOF]
     x_init = np.asarray([-0.04703266, 0.0114661, 0.10795938, 0.01809096, -2.7547281, -0.31116971])
@@ -287,45 +343,34 @@ if __name__ == "__main__":
     a_hat_init = np.zeros((3))
     da_hat_init = np.zeros((3))
 
-    # PID gain matrices
-    alpha = 0.5
-    P, I, D = 59.0, 20.0, 13.5
-    KP = np.asarray([[P, 0, 0], [0, P, 0], [0, 0, P]])
-    KI = np.asarray([[I, 0, 0], [0, I, 0], [0, 0, I]])
-    KD = np.asarray([[D, 0, 0], [0, D, 0], [0, 0, D]])
-
-    # Create time parameters and axis
-    dt = 0.001
-    test_length = 3 # in seconds
-    t = np.asarray([n * dt for n in range(0, int(test_length/dt)+1)])
-
     # Creating x_d and dx_d over time
     dx_d = np.zeros((np.size(t), 6))
     # xa_d = [1.0, -2.0, 0]
     # xp_d = scipy.optimize.fmin(getXpTarget, x_init[:3], args=(xa_d, dx_d[-1,:3]), xtol=0.000001, disp=False)
     # x_d_row = np.asarray([np.concatenate((xp_d, xa_d), axis=0)])
 
-    # final_ee_pos_des = np.asarray([0.542, -0.10475, -0.1])
+    # final_ee_pos_des = np.asarray([0.542, -0.10475, 0.1])
     # x_d_row = getJointsFromEE(final_ee_pos_des)
 
-    x_d_row = np.asarray([-0.04703289,  0.01151737,  0.10796366, -0.01255453, -3.04393167, -0.08769358])
+    x_d_row = np.asarray([-0.04927567, 0.01983959, 0.12133543, 0.05801089, -2.42606408, -0.46385972])
     x_d = np.tile(x_d_row, (np.size(t), 1))
 
     # Simulate
-    x, dx, a, da = simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD)
+    x, dx, a, da = simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD, K_environment)
 
     # Calculate errors
     x_err, a_err = calculateError(x, dx, a, da, x_d, dx_d, KP, KI, KD)
 
     # Calculate end effector position x, y, z
-    calculateEndEffectorPosition(x)
-
-    quit()
+    ee_positions = calculateEndEffectorPosition(x)
 
     # Calculate energy and energy derivative, V and V_dot
     # calculateEnergy(x, dx, a, da, x_d, dx_d, x_err, a_err, KP, KI, KD, alpha)
 
-    # Plot
-    plotResults(x, dx, a, da, x_d, dx_d, x_err, a_err, t)
+    # Plot joint positions over time
+    plotJointResults(x, dx, a, da, x_d, dx_d, x_err, a_err, t)
+
+    # Plot end effector position over time
+    plotEEResults(ee_positions, t)
 
     plt.show()
