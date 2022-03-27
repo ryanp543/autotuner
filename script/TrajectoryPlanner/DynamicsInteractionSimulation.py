@@ -36,6 +36,7 @@ def getXpTarget(x_p, x_a_target, dx_a_target):
     return np.dot(v, v)
 
 
+# For the minimization function to find the joint angles associated with desired end effector position
 def getJointStart(xa, robot, sus, ee_pos_des):
     ee_pos, _ = getEndEffectorPos(xa)
     error = ee_pos - ee_pos_des
@@ -43,15 +44,34 @@ def getJointStart(xa, robot, sus, ee_pos_des):
     return np.dot(error, error)
 
 
+# Calculates end effector position and passive joint positions from provided active joint positions
 def getEndEffectorPos(xa):
     xp_init = [0, 0, 0]
-    xp_d = scipy.optimize.fmin(getXpTarget, xp_init, args=(xa, [0,0,0]), xtol=0.000001, disp=False)
-    x = np.concatenate((xp_d, xa))
+    xp = scipy.optimize.fmin(getXpTarget, xp_init, args=(xa, [0,0,0]), xtol=0.000001, disp=False)
+    x = np.concatenate((xp, xa))
     x_config = np.concatenate(([0.0, 0.0], x[0], 0, x[1:], 0), axis=None)
     robot.setConfig(x_config)
-    ee_pos = ee_link.getWorldPosition([0, 0, 0])
+    ee_pos = np.asarray(ee_link.getWorldPosition([0, 0, 0]))
 
-    return ee_pos, xp_d
+    return ee_pos, xp
+
+
+# Uses a minimization function to get the joint positions associated with desired end effector position
+def getJointsFromEE(ee_pos_des):
+    # Initializing lower and upper bounds of robot DOFs
+    lowerbounds_a = [-np.pi, -np.pi, -1.0472]
+    upperbounds_a = [np.pi, 0, 2.6]
+    bnds_a = scipy.optimize.Bounds(lowerbounds_a, upperbounds_a)
+
+    res = scipy.optimize.minimize(getJointStart, np.asarray([0, 0, 0]), args=(robot, sus, ee_pos_des), bounds=bnds_a)
+    xa_init = res.x
+    ee_pos_init, xp_init = getEndEffectorPos(xa_init)
+
+    x_init = np.concatenate((xp_init, xa_init))
+    print("Calculated x_init: " + str(x_init))
+    print("EE position from calculated x_init: " + str(ee_pos_init))
+
+    return x_init
 
 
 # Function: Forward Simulation Step
@@ -121,6 +141,8 @@ def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD
     a_hat = np.asarray([a_hat_init])
     da_hat = np.asarray([da_hat_init])
 
+    print("Starting simulation...")
+
     for k in range(np.size(t)-1):
         # Calculate new states
         x_new, dx_new, a_new, da_new = forwardSimStep(x[k], dx[k], a_hat[k], da_hat[k], x_d[k], dx_d[k], dt, KP, KI, KD)
@@ -131,10 +153,14 @@ def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD
         a_hat = np.append(a_hat, [a_new], axis=0)
         da_hat = np.append(da_hat, [da_new], axis=0)
 
+    print("Simulation complete.")
+
     return x, dx, a_hat, da_hat
 
 
 def calculateError(x, dx, a_hat, da_hat, x_d, dx_d, KP, KI, KD):
+    print("Calculating error...")
+
     # Calculate error in position
     x_err = np.subtract(x, x_d)
 
@@ -148,6 +174,18 @@ def calculateError(x, dx, a_hat, da_hat, x_d, dx_d, KP, KI, KD):
     a_err = np.subtract(a_hat, a)
 
     return x_err, a_err
+
+
+def calculateEndEffectorPosition(x):
+    print("Calculating end effector position...")
+
+    ee_pos_all = np.asarray([[0, 0 ,0]])
+    for k in range(np.shape(x)[0]):0
+        ee_pos, _ = getEndEffectorPos(x[k, 3:])
+
+        ee_pos_all = np.append(ee_pos_all, [ee_pos], axis=0)
+
+    print(np.shape(ee_pos_all))
 
 
 def calculateEnergy(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, KP, KI, KD, alpha):
@@ -190,6 +228,39 @@ def plotResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.grid()
     plt.xlabel("Time (s)")
 
+    fig = plt.figure(2, figsize=(10,22), dpi=80)
+
+    ax = fig.add_subplot(6, 1, 1)
+    plt.plot(t, x[:, 0], color='green')
+    plt.ylabel("z (rad)") # + "\n"  + r"($10^{-2}$ rad)")
+    plt.grid()
+
+    ax = fig.add_subplot(6, 1, 2)
+    plt.plot(t, x[:, 1], color='green')
+    plt.ylabel(r"$\theta$ (rad)") # + "\n" + r"($10^{-2}$ rad)")
+    plt.grid()
+
+    ax = fig.add_subplot(6, 1, 3)
+    plt.plot(t, x[:, 2], color='green')
+    plt.ylabel(r"$\phi$ (rad)") # + "\n" + r"($10^{-3}$ rad)")
+    plt.grid()
+
+    ax = fig.add_subplot(6, 1, 4)
+    plt.plot(t, x[:, 3], color='green')
+    plt.ylabel(r"$q_1$ (rad)")
+    plt.grid()
+
+    ax = fig.add_subplot(6, 1, 5)
+    plt.plot(t, x[:, 4], color='green')
+    plt.ylabel(r"$q_2$ (rad)")
+    plt.grid()
+
+    ax = fig.add_subplot(6, 1, 6)
+    plt.plot(t, x[:, 5], color='green')
+    plt.ylabel(r"$q_3$ (rad)")
+    plt.grid()
+    plt.xlabel("Time (s)")
+
 
 # Function: Main
 # Uses a least-squares optimizer to generate a trajectory path to minimize base vibrations, joint acceleration,
@@ -206,22 +277,9 @@ if __name__ == "__main__":
     # Getting the end effector link of the robot assembly
     ee_link = robot.link(robot.numLinks() - 1)
 
-    # Initializing lower and upper bounds of robot DOFs
-    lowerbounds_a = [-np.pi, -np.pi, -1.0472]
-    upperbounds_a = [np.pi, 0, 2.6]
-    bnds_a = scipy.optimize.Bounds(lowerbounds_a, upperbounds_a)
-
     # Comment out to calculate start position from contact_pt
     # contact_pt = np.asarray([0.542, -0.10475, 0])
-    # res = scipy.optimize.minimize(getJointStart, np.asarray([0, 0, 0]), args=(robot, sus, contact_pt), bounds=bnds_a)
-    # xa_init = res.x
-    # ee_pos_init, xp_init = getEndEffectorPos(xa_init)
-    #
-    # x_init = np.concatenate((xp_init, xa_init))
-    # print(x_init)
-    # print(ee_pos_init)
-    #
-    # quit()
+    # x_init = getJointsFromEE(contact_pt)
 
     # Initial state. Joint coords: [z pitch roll 3DOF]
     x_init = np.asarray([-0.04703266, 0.0114661, 0.10795938, 0.01809096, -2.7547281, -0.31116971])
@@ -243,9 +301,14 @@ if __name__ == "__main__":
 
     # Creating x_d and dx_d over time
     dx_d = np.zeros((np.size(t), 6))
-    xa_d = [1.0, -2.0, 0]
-    xp_d = scipy.optimize.fmin(getXpTarget, x_init[:3], args=(xa_d, dx_d[-1,:3]), xtol=0.000001, disp=False)
-    x_d_row = np.asarray([np.concatenate((xp_d, xa_d), axis=0)])
+    # xa_d = [1.0, -2.0, 0]
+    # xp_d = scipy.optimize.fmin(getXpTarget, x_init[:3], args=(xa_d, dx_d[-1,:3]), xtol=0.000001, disp=False)
+    # x_d_row = np.asarray([np.concatenate((xp_d, xa_d), axis=0)])
+
+    # final_ee_pos_des = np.asarray([0.542, -0.10475, -0.1])
+    # x_d_row = getJointsFromEE(final_ee_pos_des)
+
+    x_d_row = np.asarray([-0.04703289,  0.01151737,  0.10796366, -0.01255453, -3.04393167, -0.08769358])
     x_d = np.tile(x_d_row, (np.size(t), 1))
 
     # Simulate
@@ -253,6 +316,11 @@ if __name__ == "__main__":
 
     # Calculate errors
     x_err, a_err = calculateError(x, dx, a, da, x_d, dx_d, KP, KI, KD)
+
+    # Calculate end effector position x, y, z
+    calculateEndEffectorPosition(x)
+
+    quit()
 
     # Calculate energy and energy derivative, V and V_dot
     # calculateEnergy(x, dx, a, da, x_d, dx_d, x_err, a_err, KP, KI, KD, alpha)
