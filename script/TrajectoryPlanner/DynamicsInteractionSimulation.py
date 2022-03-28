@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import klampt
 
+FILEPATH_TRAJECTORY = './DynamicsInteractionTrajectory.csv'
 
 # Function: Get Passive State Target
 # Returns the target static passive state, calculated by using the stiffness matrix and gravity vectors
@@ -372,5 +373,12 @@ if __name__ == "__main__":
 
     # Plot end effector position over time
     plotEEResults(ee_positions, t)
+
+    with open(FILEPATH_TRAJECTORY, 'w') as myfile:
+        csvwriter = csv.writer(myfile, delimiter=',')
+        csvwriter.writerow([dt, test_length])
+
+        for j in range(np.shape(x)[0]):
+            csvwriter.writerow(x[j, :])
 
     plt.show()
