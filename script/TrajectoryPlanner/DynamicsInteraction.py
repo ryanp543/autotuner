@@ -44,18 +44,65 @@ def ExtractData_GainBounds():
     return constants, alpha, K_I
 
 
-# Function: Max Eigenvalue H
-# Returns the maximum eigenvalue of the H matrix for a given state. Used with minimizer to find maximum possible
-# eigenvalue of the H matrix
-def FindMaxEigH(var_init, robot, sus):
-    state = [0, 0, var_init[0], 0]
-    state.extend(var_init[1:])
-    robot.setConfig(state)
-    H_array = np.asarray(robot.getMassMatrix())
-    H = np.delete(H_array, [0,1,3], 0)
-    H = np.delete(H, [0,1,3], 1)
-    w, v = np.linalg.eig(H)
-    return -max(w)
+# Function: Get Passive State Target
+# Returns the target static passive state, calculated by using the stiffness matrix and gravity vectors
+# calculated using Klampt
+def getXpTarget(x_p, x_a_target, dx_a_target):
+    ee_link = robot.link(robot.numLinks() - 1)
+    x = [0, 0, x_p[0], 0, x_p[1], x_p[2]] + list(x_a_target) + [0]
+    robot.setConfig(x)
+    G = robot.getGravityForces([0, 0, -9.81])
+    K = np.asarray(sus.GetStiffnessMatrix(z=x_p[0], qPitch=x_p[1], qRoll=x_p[2]))
+    G_p = np.array([G[2], G[4], G[5]])
+
+    J = np.asarray(ee_link.getPositionJacobian([0, 0, 0]))
+    J = np.delete(J, [0, 1, 3, 9], 1)
+    J_trans = np.transpose(J)
+    ee_pos = ee_link.getWorldPosition([0, 0, 0])
+    tau_ext = -np.linalg.multi_dot([J_trans, K_environment, ee_pos - contact_pt])
+    tau_ext_p = tau_ext[:3]
+
+    v = G_p + np.dot(K, x_p) - tau_ext_p
+    return np.dot(v, v)
+
+
+# For the minimization function to find the joint angles associated with desired end effector position
+def getJointStart(xa, robot, sus, ee_pos_des):
+    ee_pos, _ = getEndEffectorPos(xa)
+    error = ee_pos - ee_pos_des
+
+    return np.dot(error, error)
+
+
+# Calculates end effector position and passive joint positions from provided active joint positions
+def getEndEffectorPos(xa):
+    xp_init = [0, 0, 0]
+    xp = scipy.optimize.fmin(getXpTarget, xp_init, args=(xa, [0,0,0]), xtol=0.000001, disp=False)
+    x = np.concatenate((xp, xa))
+    x_config = np.concatenate(([0.0, 0.0], x[0], 0, x[1:], 0), axis=None)
+    robot.setConfig(x_config)
+    ee_link = robot.link(robot.numLinks() - 1)
+    ee_pos = np.asarray(ee_link.getWorldPosition([0, 0, 0]))
+
+    return ee_pos, xp
+
+
+# Uses a minimization function to get the joint positions associated with desired end effector position
+def getJointsFromEE(ee_pos_des):
+    # Initializing lower and upper bounds of robot DOFs
+    lowerbounds_a = [-np.pi, -np.pi, -1.0472]
+    upperbounds_a = [np.pi, 0, 2.6]
+    bnds_a = scipy.optimize.Bounds(lowerbounds_a, upperbounds_a)
+
+    res = scipy.optimize.minimize(getJointStart, np.asarray([0, 0, 0]), args=(robot, sus, ee_pos_des), bounds=bnds_a)
+    xa_init = res.x
+    ee_pos_init, xp_init = getEndEffectorPos(xa_init)
+
+    x_init = np.concatenate((xp_init, xa_init))
+    print("Calculated x_init: " + str(x_init))
+    print("EE position from calculated x_init: " + str(ee_pos_init))
+
+    return x_init
 
 
 def FindKtau(var_init, robot, sus, contact_pt, Kenv):
@@ -129,14 +176,84 @@ def FindMaxPs(robot, sus, contact_pt, Kenv, task_sphere_rad):
     return 0.5 * maxrowsum * (task_sphere_rad**2)
 
 
+def FindMinEigBenv(var_init, robot, sus, Benv, active):
+    x = [0, 0, var_init[0], 0] + list(var_init[1:len(var_init)])
+    robot.setConfig(x)
 
-def GetConstants(robot, sus, Kenv, contact_pt, task_sphere_rad):
-    # Initializing state vectors
-    # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
-    x_init = [0] * robot.numLinks()
-    dx_init = [0.1] * robot.numLinks()
-    states = x_init + dx_init
+    J = np.asarray(link4.getPositionJacobian([0,0,0]))
+    if active:
+        J = np.delete(J, [0,1,2,3,4,5,9], 1)
+    else:
+        J = np.delete(J, [0,1,3,6,7,8,9], 1)
+    J_trans = np.transpose(J)
 
+    Benv_q = np.linalg.multi_dot([J_trans, Benv, J])
+    w, v = np.linalg.eig(Benv_q)
+
+    return min(w)
+
+
+def FindMaxEigBenv(var_init, robot, sus, Benv):
+    x = [0, 0, var_init[0], 0] + list(var_init[1:len(var_init)])
+    robot.setConfig(x)
+
+    J_a = np.asarray(link4.getPositionJacobian([0,0,0]))
+    J_a = np.delete(J_a, [0,1,2,3,4,5,9], 1)
+    J_a_trans = np.transpose(J_a)
+
+    Benv_q = np.linalg.multi_dot([J_a_trans, Benv, J_a])
+    w_a, v_a = np.linalg.eig(Benv_q)
+
+    J_p = np.asarray(link4.getPositionJacobian([0,0,0]))
+    J_p = np.delete(J_p, [0,1,3,6,7,8,9], 1)
+    J_p_trans = np.transpose(J_p)
+
+    Benv_q = np.linalg.multi_dot([J_p_trans, Benv, J_p])
+    w_p, v_p = np.linalg.eig(Benv_q)
+
+    return -max([max(w_p), max(w_a)])
+
+
+def FindKBenv(var_init, robot, sus, Benv):
+    list_dkBenvdx = []
+    list_max = []
+
+    x = [0, 0, var_init[0], 0] + list(var_init[1:len(var_init)])  # roll pitch 4dof
+    dx = 0.001 # [0, 0, 0, 0] + list(var_init[len(var_init)/2:len(var_init)])
+    x_original = x[:]
+
+    for j in range(4, len(x)):
+        x = x_original[:]
+
+        robot.setConfig(x)
+        J1 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
+        J1 = np.delete(J1, [0,1,2,3,9], 1)
+        J1_trans = np.transpose(J1)
+
+        # full joint coord: (qroll, qpitch, q1, q2, q3)
+        Benv_q1 = -np.linalg.multi_dot([J1_trans, Benv, J1])
+
+        x[j] = x[j] + dx
+
+        robot.setConfig(x)
+        J2 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
+        J2 = np.delete(J2, [0,1,2,3,9], 1)
+        J2_trans = np.transpose(J2)
+
+        Benv_q2 = -np.linalg.multi_dot([J2_trans, Benv, J2])
+
+        for i in range(len(Benv_q1)):
+            for j in range(len(Benv_q1[0])):
+                dBenv_q = Benv_q2[i][j]-Benv_q1[i][j]
+                list_dkBenvdx.append(abs(dBenv_q/dx))  # 1D array of dK/dx for x[elem]
+
+        list_max.append(np.amax(list_dkBenvdx))
+        list_dBenvdx = []
+
+    return -max(list_max)
+
+
+def GetConstants(states, robot, sus, Kenv, Benv, contact_pt, task_sphere_rad):
 
     # Initializing lower and upper bounds of robot DOFs
     lowerbounds = [-0.1, -np.pi / 4, -np.pi / 4, -np.pi, -np.pi, -1.0472, 0]
@@ -147,27 +264,64 @@ def GetConstants(robot, sus, Kenv, contact_pt, task_sphere_rad):
     cf = scipy.optimize.NonlinearConstraint(constraint_fun, 0, task_sphere_rad)
 
     # CALCULATING Ktau (qroll, qpitch, 4 DOF) states[4:robot.numLinks()]
-    print "Calculating K_tau..."
+    # print "Calculating K_tau..."
     res_Ktau = scipy.optimize.minimize(FindKtau, states[2:3] + states[4:robot.numLinks()],
                                        args=(robot, sus, contact_pt, Kenv),
                                        bounds=bnds, constraints=cf)
     stateKtau = res_Ktau.x
     kTau = -res_Ktau.fun
     print res_Ktau.message
+    # print kTau
 
     # Calculating maxTau
-    print "Calculating max tau_d..."
+    # print "Calculating max tau_d..."
     res_maxTau = scipy.optimize.minimize(FindMaxTau, states[2:3] + states[4:robot.numLinks()],
                                          args=(robot, sus, contact_pt, Kenv),
                                          bounds=bnds, constraints=cf)
     stateMaxTau = res_maxTau.x
     maxTau = -res_maxTau.fun
+    # print res_maxTau.message
+    # print maxTau
 
     # Calculating maxPs
-    print "Calculating max Ps..."
+    # print "Calculating max Ps..."
     maxPs = FindMaxPs(robot, sus, contact_pt, Kenv, task_sphere_rad)
 
-    return kTau, maxTau, maxPs, res_Ktau.success
+    # Calculating minEigBenv for active coords
+    # print "Calculating minEigBenv_a..."
+    res_minEigBenv_a = scipy.optimize.minimize(FindMinEigBenv, states[2:3] + states[4:robot.numLinks()],
+                                                args=(robot, sus, Benv, True), bounds=bnds, constraints=cf)
+    stateMinEigBenv_a = res_minEigBenv_a.x
+    minEigBenv_a = res_minEigBenv_a.fun
+    # print(minEigBenv_a)
+
+    # Calculating minEigBenv for passive coords
+    # print "Calculating minEigBenv_p..."
+    res_minEigBenv_p = scipy.optimize.minimize(FindMinEigBenv, states[2:3] + states[4:robot.numLinks()],
+                                             args=(robot, sus, Benv, False), bounds=bnds, constraints=cf)
+    stateMinEigBenv_p = res_minEigBenv_p.x
+    minEigBenv_p = res_minEigBenv_p.fun
+    # print(minEigBenv_p)
+
+    # Calculating maxEigBenv
+    # print "Calculating maxEigBenv..."
+    res_maxEigBenv = scipy.optimize.minimize(FindMaxEigBenv, states[2:3] + states[4:robot.numLinks()],
+                                             args=(robot, sus, Benv), bounds=bnds, constraints=cf)
+    stateMaxEigBenv = res_maxEigBenv.x
+    maxEigBenv = -res_maxEigBenv.fun
+    # print(maxEigBenv)
+
+    # Calculating kBenv
+    # print "Calculating max tau_d..."
+    res_kBenv = scipy.optimize.minimize(FindKBenv, states[2:3] + states[4:robot.numLinks()],
+                                         args=(robot, sus, Benv),
+                                         bounds=bnds, constraints=cf)
+    stateKBenv = res_kBenv.x
+    kBenv = -res_kBenv.fun
+    # print res_kBenv.message
+    # print kBenv
+
+    return kTau, maxTau, maxPs, res_Ktau.success, minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv
 
 
 # Function: Main
@@ -191,10 +345,13 @@ if __name__ == "__main__":
     maxEigH, minEigH, maxG, kG, kK, kB, kX, maxEigK, maxEigB, minEigK_p, minEigB_p, kC, k, total_mass =\
         c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13]
 
-
     # Initializing environmental stiffness matrix
     stiffness = 100
     stiffness_list = [x * 1 for x in range(1, 301)]
+
+    # Initializing environmental damping matrix (note: units are Ns/m)
+    damping = 0
+    damping_list = [x * 1 for x in range(1, 91)]
 
     # Define contact point
     contact_pt = np.asarray([0.542, -0.10475, 0])
@@ -203,24 +360,41 @@ if __name__ == "__main__":
     task_radius = 0.1
     task_radius_list = [x * 0.002 for x in range(1, 201)]
 
+    # Initialize x_init and dx_init
+    # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
+    x_init = [0] * robot.numLinks()
+    dx_init = [0.1] * robot.numLinks()
+
+    # Alternatively, get joint positions at contact pt:
+    # x_start = getJointsFromEE(contact_pt)
+    x_init = [0, 0, -0.04703264, 0, 0.01146629, 0.10795922, 0.01809322, -2.75472921, -0.31117013, 0]
+    states = x_init + dx_init
+
     with open(FILEPATH_INTERACTION_CSV, 'w') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
-        csvwriter.writerow(["task_radius", "stiffness", "kTau", "maxTau", "maxPs", "k", "alpha1",
-                            "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"])
+        csvwriter.writerow(["task_radius", "stiffness", "damping", "kTau", "maxTau", "maxPs", "k",
+                            "minEigBenv_a", "minEigBenv_p", "maxEigBenv", "kBenv",
+                            "alpha1", "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"])
 
-        # for task_radius in task_radius_list:
-        for stiffness in stiffness_list:
+        for task_radius in task_radius_list:
+        # for stiffness in stiffness_list:
+        # for damping in damping_list:
             print "Task radius: " + str(task_radius)
             print "Stiffness: " + str(stiffness)
+            print "Damping: " + str(damping)
 
             # Set K_environment stiffness
             K_environment = np.asarray([[stiffness, 0, 0], [0, stiffness, 0], [0, 0, stiffness]])
+
+            # Set B_environment damping
+            B_environment = np.asarray([[damping, 0, 0], [0, damping, 0], [0, 0, damping]])
 
             # Save k value
             k_orig = k
 
             # Get constants, adjust k
-            kTau, maxTau, maxPs, success = GetConstants(robot, sus, K_environment, contact_pt, task_radius)
+            kTau, maxTau, maxPs, success, minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv \
+                = GetConstants(x_init+dx_init, robot, sus, K_environment, B_environment, contact_pt, task_radius)
             k = k + kTau
             # print kTau
 
@@ -231,13 +405,14 @@ if __name__ == "__main__":
             # print alpha1
 
             alpha2 = symbols('alpha2')
-            eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p
+            eq = (alpha2 * maxEigH) + (((kK * kX) ** 2) / (4 * maxEigH * alpha2 ** 3)) - minEigB_p + minEigBenv_p
             sol = solve(eq)
             for m in range(len(sol)):
                 alphas.append(sol[m])
 
             if success:
-                csvwriter.writerow([task_radius, stiffness, kTau, maxTau, maxPs, k] + alphas)
+                csvwriter.writerow([task_radius, stiffness, damping, kTau, maxTau, maxPs, k,
+                                    minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv] + alphas)
 
             # Reset k
             k = k_orig

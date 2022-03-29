@@ -27,7 +27,7 @@ from SuspensionMatrices import Suspension_8legs
 # CONSTANTS AND FILEPATHS
 # Change filepath location path to your GenerateGainsConstants.csv (as if you were running this code from the
 # Trajectory Planner directory
-FILEPATH_INTERACTION_CSV = './DynamicsInteractionStiffConstants.csv'
+FILEPATH_INTERACTION_CSV = './DynamicsInteractionDampConstants.csv'
 FILEPATH_DEFAULT_CSV = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
@@ -77,22 +77,33 @@ def ExtractInteractionData():
     # Create empty lists
     radius_list = []
     stiffness_list = []
+    damping_list = []
     kTau_list = []
     maxTau_list = []
     maxPs_list = []
     k_list = []
+    minEigBenv_a_list = []
+    minEigBenv_p_list = []
+    maxEigBenv_list = []
+    kBenv_list = []
 
     for k in range(1, len(data)):
         radius_list.append(float(data[k][0]))
         stiffness_list.append(float(data[k][1]))
-        kTau_list.append(float(data[k][2]))
-        maxTau_list.append(float(data[k][3]))
-        maxPs_list.append(float(data[k][4]))
-        k_list.append(float(data[k][5]))
+        damping_list.append(float(data[k][2]))
+        kTau_list.append(float(data[k][3]))
+        maxTau_list.append(float(data[k][4]))
+        maxPs_list.append(float(data[k][5]))
+        k_list.append(float(data[k][6]))
+        minEigBenv_a_list.append(float(data[k][7]))
+        minEigBenv_p_list.append(float(data[k][8]))
+        maxEigBenv_list.append(float(data[k][9]))
+        kBenv_list.append(float(data[k][10]))
 
 
     # Returns radius, stiffness, kTau, k lists
-    return radius_list, stiffness_list, kTau_list, maxTau_list, maxPs_list, k_list
+    return radius_list, stiffness_list, damping_list, kTau_list, maxTau_list, maxPs_list, k_list, \
+           minEigBenv_a_list, minEigBenv_p_list, maxEigBenv_list, kBenv_list
 
 
 # Function: Get Xi
@@ -334,7 +345,8 @@ if __name__ == "__main__":
         c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13]
 
     # Extract lists of constants adjusted by the variations of mass
-    radius_list, stiffness_list, kTau_list, maxTau_list, maxPs_list, k_list = ExtractInteractionData()
+    radius_list, stiffness_list, damping_list, kTau_list, maxTau_list, maxPs_list, k_list, \
+    minEigBenv_a_list, minEigBenv_p_list, maxEigBenv_list, kBenv_list = ExtractInteractionData()
 
     # Set maxTau and maxPs
     maxTau = maxTau_list[-1]
@@ -369,6 +381,8 @@ if __name__ == "__main__":
     for n in range(0, len(radius_list)):
         print "Radius: " + str(radius_list[n])
         print "Stiffness: " + str(stiffness_list[n])
+        print "Damping: " + str(damping_list[n])
+        
         kTau, k = kTau_list[n], k_list[n]
         K_P = K_P_list[n]
         K_D = K_D_list[n]
