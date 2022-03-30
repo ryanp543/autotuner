@@ -86,7 +86,7 @@ def getJointsFromEE(ee_pos_des):
 # Function: Forward Simulation Step
 # Calculates the passive and active states and derivatives of the next time step
 # (x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d)
-def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD, Kenv, cont_pt):
+def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD, Kenv, Benv, cont_pt):
     # State is [x y z yaw pitch roll 4DOF]
     x_config = np.concatenate(([0.0, 0.0], x[0], 0, x[1:], 0), axis=None)
     dx_config = np.concatenate(([0.0, 0.0], dx[0], 0, dx[1:], 0), axis=None)
@@ -133,8 +133,12 @@ def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD, Kenv, cont_p
     ee_pos = ee_link.getWorldPosition([0, 0, 0])
     tau_ext = -np.linalg.multi_dot([J_trans, Kenv, ee_pos - cont_pt])
 
+    # Create Benv_q matrix
+    Benv_q = -np.linalg.multi_dot([J_trans, Benv, J])
+    # print(np.matmul(Benv_q, dx))
+
     # Right hand side of dynamics equation (without inertial matrix inverse)
-    rhs = -c_vec - g_vec - np.matmul(K, x_err) - np.matmul(B, dx) + I + tau_ext
+    rhs = -c_vec - g_vec - np.matmul(K, x_err) - np.matmul(B, dx) + I + tau_ext + np.matmul(Benv_q, dx)
     (ddx, _, _, _) = np.linalg.lstsq(H_mat, rhs, rcond=None)
 
     # Kinematics calculations
@@ -150,7 +154,7 @@ def forwardSimStep(x, dx, a_hat, da_hat, x_d, dx_d, dt, KP, KI, KD, Kenv, cont_p
 
 # Function: Forward Simulation
 # Returns full list of passive and active states, derivatives, and errors for plotting given control input.
-def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD, Kenv):
+def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD, Kenv, Benv):
     # Calculate contact point from x_init
     x_config = np.concatenate(([0.0, 0.0], x_init[0], 0, x_init[1:], 0), axis=None)
     robot.setConfig(x_config)
@@ -167,7 +171,7 @@ def simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD
     for k in range(np.size(t)-1):
         # Calculate new states
         x_new, dx_new, a_new, da_new = forwardSimStep(x[k], dx[k], a_hat[k], da_hat[k], x_d[k], dx_d[k],
-                                                      dt, KP, KI, KD, Kenv, contact)
+                                                      dt, KP, KI, KD, Kenv, Benv, contact)
 
         # Add to arrays
         x = np.append(x, [x_new], axis=0)
@@ -329,6 +333,10 @@ if __name__ == "__main__":
     stiffness = 100
     K_environment = np.asarray([[stiffness, 0, 0], [0, stiffness, 0], [0, 0, stiffness]])
 
+    # Damping environment matrix
+    damping = 10
+    B_environment = np.asarray([[damping, 0, 0], [0, damping, 0], [0, 0, damping]])
+
     # Create time parameters and axis
     dt = 0.001
     test_length = 10 # in seconds
@@ -339,6 +347,7 @@ if __name__ == "__main__":
     # x_init = getJointsFromEE(contact_point)
 
     # Initial state. Joint coords: [z pitch roll 3DOF]
+    # x_init = np.zeros((6))
     x_init = np.asarray([-0.04703266, 0.0114661, 0.10795938, 0.01809096, -2.7547281, -0.31116971])
     dx_init = np.zeros((6))
     a_hat_init = np.zeros((3))
@@ -357,7 +366,7 @@ if __name__ == "__main__":
     x_d = np.tile(x_d_row, (np.size(t), 1))
 
     # Simulate
-    x, dx, a, da = simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD, K_environment)
+    x, dx, a, da = simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD, K_environment, B_environment)
 
     # Calculate errors
     x_err, a_err = calculateError(x, dx, a, da, x_d, dx_d, KP, KI, KD)

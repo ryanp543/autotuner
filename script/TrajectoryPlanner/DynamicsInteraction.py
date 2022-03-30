@@ -214,20 +214,23 @@ def FindMaxEigBenv(var_init, robot, sus, Benv):
     return -max([max(w_p), max(w_a)])
 
 
-def FindKBenv(var_init, robot, sus, Benv):
+def FindKBenv(var_init, robot, sus, Benv, active):
     list_dkBenvdx = []
     list_max = []
 
     x = [0, 0, var_init[0], 0] + list(var_init[1:len(var_init)])  # roll pitch 4dof
-    dx = 0.001 # [0, 0, 0, 0] + list(var_init[len(var_init)/2:len(var_init)])
+    dx = 0.001
     x_original = x[:]
 
-    for j in range(4, len(x)):
+    for j in [2]+range(4, len(x)):
         x = x_original[:]
 
         robot.setConfig(x)
         J1 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
-        J1 = np.delete(J1, [0,1,2,3,9], 1)
+        if active:
+            J1 = np.delete(J1, [0,1,2,3,4,5,9], 1)
+        else:
+            J1 = np.delete(J1, [0,1,3,6,7,8,9], 1)
         J1_trans = np.transpose(J1)
 
         # full joint coord: (qroll, qpitch, q1, q2, q3)
@@ -237,7 +240,10 @@ def FindKBenv(var_init, robot, sus, Benv):
 
         robot.setConfig(x)
         J2 = np.asarray(link4.getPositionJacobian([0, 0, 0]))
-        J2 = np.delete(J2, [0,1,2,3,9], 1)
+        if active:
+            J2 = np.delete(J2, [0,1,2,3,4,5,9], 1)
+        else:
+            J2 = np.delete(J2, [0,1,3,6,7,8,9], 1)
         J2_trans = np.transpose(J2)
 
         Benv_q2 = -np.linalg.multi_dot([J2_trans, Benv, J2])
@@ -245,7 +251,7 @@ def FindKBenv(var_init, robot, sus, Benv):
         for i in range(len(Benv_q1)):
             for j in range(len(Benv_q1[0])):
                 dBenv_q = Benv_q2[i][j]-Benv_q1[i][j]
-                list_dkBenvdx.append(abs(dBenv_q/dx))  # 1D array of dK/dx for x[elem]
+                list_dkBenvdx.append(dBenv_q/dx)  # 1D array of dK/dx for x[elem]
 
         list_max.append(np.amax(list_dkBenvdx))
         list_dBenvdx = []
@@ -256,8 +262,8 @@ def FindKBenv(var_init, robot, sus, Benv):
 def GetConstants(states, robot, sus, Kenv, Benv, contact_pt, task_sphere_rad):
 
     # Initializing lower and upper bounds of robot DOFs
-    lowerbounds = [-0.1, -np.pi / 4, -np.pi / 4, -np.pi, -np.pi, -1.0472, 0]
-    upperbounds = [0.1, np.pi / 4, np.pi / 4, np.pi, 0, 2.6, 0]
+    lowerbounds = [-0.1, -np.pi/4, -np.pi/4, -np.pi, -np.pi, -1.0472, 0]
+    upperbounds = [0.1, np.pi/4, np.pi/4, np.pi, 0, 2.6, 0]
     bnds = scipy.optimize.Bounds(lowerbounds, upperbounds)
 
     # Initialize nonlinear constraint based on task sphere radius
@@ -311,17 +317,24 @@ def GetConstants(states, robot, sus, Kenv, Benv, contact_pt, task_sphere_rad):
     maxEigBenv = -res_maxEigBenv.fun
     # print(maxEigBenv)
 
-    # Calculating kBenv
-    # print "Calculating max tau_d..."
-    res_kBenv = scipy.optimize.minimize(FindKBenv, states[2:3] + states[4:robot.numLinks()],
-                                         args=(robot, sus, Benv),
-                                         bounds=bnds, constraints=cf)
-    stateKBenv = res_kBenv.x
-    kBenv = -res_kBenv.fun
-    # print res_kBenv.message
-    # print kBenv
+    # Calculating kBenv_a
+    # print "Calculating kBenv_a..."
+    res_kBenv_a = scipy.optimize.minimize(FindKBenv, states[2:3] + states[4:robot.numLinks()],
+                                         args=(robot, sus, Benv, True), bounds=bnds, constraints=cf, tol=0.1)
+    stateKBenv_a = res_kBenv_a.x
+    kBenv_a = -res_kBenv_a.fun
+    # print res_kBenv_a.message
+    # print stateKBenv_a
+    # print kBenv_a
 
-    return kTau, maxTau, maxPs, res_Ktau.success, minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv
+    # Calculating kBenv_p
+    # print "Calculating kBenv_p..."
+    res_kBenv_p = scipy.optimize.minimize(FindKBenv, states[2:3] + states[4:robot.numLinks()],
+                                         args=(robot, sus, Benv, False), bounds=bnds, constraints=cf, tol=0.1)
+    stateKBenv_p = res_kBenv_p.x
+    kBenv_p = -res_kBenv_p.fun
+
+    return kTau, maxTau, maxPs, res_Ktau.success, minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv_a, kBenv_p
 
 
 # Function: Main
@@ -351,14 +364,14 @@ if __name__ == "__main__":
 
     # Initializing environmental damping matrix (note: units are Ns/m)
     damping = 0
-    damping_list = [x * 1 for x in range(1, 91)]
-
-    # Define contact point
-    contact_pt = np.asarray([0.542, -0.10475, 0])
+    damping_list = [x * 0.1 for x in range(1, 151)]
 
     # Initializing constraint based on sphere of task space
     task_radius = 0.1
     task_radius_list = [x * 0.002 for x in range(1, 201)]
+
+    # Define contact point
+    contact_pt = np.asarray([0.542, -0.10475, 0])
 
     # Initialize x_init and dx_init
     # full state: (x, y, z, qyaw, qroll, qpitch, q1, q2, q3, q4)
@@ -373,7 +386,7 @@ if __name__ == "__main__":
     with open(FILEPATH_INTERACTION_CSV, 'w') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
         csvwriter.writerow(["task_radius", "stiffness", "damping", "kTau", "maxTau", "maxPs", "k",
-                            "minEigBenv_a", "minEigBenv_p", "maxEigBenv", "kBenv",
+                            "minEigBenv_a", "minEigBenv_p", "maxEigBenv", "kBenv_a", "kBenv_p",
                             "alpha1", "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"])
 
         for task_radius in task_radius_list:
@@ -393,7 +406,7 @@ if __name__ == "__main__":
             k_orig = k
 
             # Get constants, adjust k
-            kTau, maxTau, maxPs, success, minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv \
+            kTau, maxTau, maxPs, success, minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv_a, kBenv_p \
                 = GetConstants(x_init+dx_init, robot, sus, K_environment, B_environment, contact_pt, task_radius)
             k = k + kTau
             # print kTau
@@ -412,7 +425,9 @@ if __name__ == "__main__":
 
             if success:
                 csvwriter.writerow([task_radius, stiffness, damping, kTau, maxTau, maxPs, k,
-                                    minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv] + alphas)
+                                    minEigBenv_a, minEigBenv_p, maxEigBenv, kBenv_a, kBenv_p] + alphas)
+            else:
+                print("Optimizations not successful")
 
             # Reset k
             k = k_orig

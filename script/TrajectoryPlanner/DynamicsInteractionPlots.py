@@ -27,7 +27,7 @@ from SuspensionMatrices import Suspension_8legs
 # CONSTANTS AND FILEPATHS
 # Change filepath location path to your GenerateGainsConstants.csv (as if you were running this code from the
 # Trajectory Planner directory
-FILEPATH_INTERACTION_CSV = './DynamicsInteractionDampConstants.csv'
+FILEPATH_INTERACTION_CSV = './DynamicsInteractionRadiusConstants.csv'
 FILEPATH_DEFAULT_CSV = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
@@ -85,7 +85,8 @@ def ExtractInteractionData():
     minEigBenv_a_list = []
     minEigBenv_p_list = []
     maxEigBenv_list = []
-    kBenv_list = []
+    kBenv_a_list = []
+    kBenv_p_list =[]
 
     for k in range(1, len(data)):
         radius_list.append(float(data[k][0]))
@@ -98,12 +99,13 @@ def ExtractInteractionData():
         minEigBenv_a_list.append(float(data[k][7]))
         minEigBenv_p_list.append(float(data[k][8]))
         maxEigBenv_list.append(float(data[k][9]))
-        kBenv_list.append(float(data[k][10]))
+        kBenv_a_list.append(float(data[k][10]))
+        kBenv_p_list.append(float(data[k][11]))
 
 
     # Returns radius, stiffness, kTau, k lists
     return radius_list, stiffness_list, damping_list, kTau_list, maxTau_list, maxPs_list, k_list, \
-           minEigBenv_a_list, minEigBenv_p_list, maxEigBenv_list, kBenv_list
+           minEigBenv_a_list, minEigBenv_p_list, maxEigBenv_list, kBenv_a_list, kBenv_p_list
 
 
 # Function: Get Xi
@@ -117,7 +119,8 @@ def GetXi(x_p, dx_p, x_a, dx_a, sus):
          -0.5 * ((alpha ** 2) * minEigH) * ((x_p ** 2) + (x_a ** 2)) + \
          total_mass * 9.81 * x_p + \
          maxG * np.sqrt((x_p ** 2) + (x_a ** 2)) + \
-         maxTau * np.sqrt((x_p ** 2) + (x_a ** 2)) # - maxPs
+         maxTau * np.sqrt((x_p ** 2) + (x_a ** 2)) + \
+         alpha * maxEigBenv * ((x_p ** 2) + (x_a ** 2))
     return xi
 
 
@@ -125,12 +128,13 @@ def GetXi(x_p, dx_p, x_a, dx_a, sus):
 # Calculates the value of L according to the equations in the paper
 def GetL(x_p, dx_p, x_a, dx_a, minEigK_p, minEigB_p, sus):
     L = -alpha * (minEigK_p - k) * (x_p ** 2) + \
-        -(minEigB_p) * (dx_p ** 2) + \
+        -(minEigB_p) * (dx_p ** 2) - minEigBenv_p * (dx_p**2) + \
         -alpha * (K_P - (1/alpha) * K_I - kG - kTau) * (x_a ** 2) + \
-        -K_D * (dx_a ** 2) + \
+        -K_D * (dx_a ** 2) - minEigBenv_a * (dx_a ** 2) + \
         alpha * maxEigH * ((dx_p ** 2) + (dx_a ** 2)) + kK * kX * (dx_p + alpha * x_p) * x_p + \
         alpha * kC * np.sqrt((x_p ** 2) + (x_a ** 2)) * ((dx_p ** 2) + (dx_a ** 2)) + \
-        0.5 * (kK + alpha * kB) * (x_p ** 2) * dx_p
+        0.5 * (kK + alpha * kB + alpha * kBenv_p) * (x_p ** 2) * dx_p + \
+        0.5 * alpha * kBenv_a * (x_a ** 2) * dx_a
 
     return L
 
@@ -300,15 +304,15 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_a
         dx = dx_a
         labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
-        setlevels = [500, 1500, 2500]
-        x_ticks = np.arange(0.5, 3, 1)
-        y_ticks = np.arange(0.0, 12, 2.5)
+        setlevels = [1000, 4000, 6000]
+        x_ticks = np.arange(1, 6, 1.5)
+        y_ticks = np.arange(0.0, 22, 5)
         # plt.text(-0.02, 1, '(b)', fontsize=20)
     else:
         x = x_p
         dx = dx_p
         labels = [r"$||\tilde{x}_p||$", r"$||\dot{\tilde{x}}_p||$"]
-        setlevels = [300, 1000, 2000]
+        setlevels = [300, 1300, 1800]
         x_ticks = np.arange(0.15, 0.6, 0.2) # 0.35
         y_ticks = np.arange(0.0, 2.5, 0.5) # 1
         # plt.text(-0.25, 12, '(a)', fontsize=20)
@@ -346,7 +350,7 @@ if __name__ == "__main__":
 
     # Extract lists of constants adjusted by the variations of mass
     radius_list, stiffness_list, damping_list, kTau_list, maxTau_list, maxPs_list, k_list, \
-    minEigBenv_a_list, minEigBenv_p_list, maxEigBenv_list, kBenv_list = ExtractInteractionData()
+    minEigBenv_a_list, minEigBenv_p_list, maxEigBenv_list, kBenv_a_list, kBenv_p_list = ExtractInteractionData()
 
     # Set maxTau and maxPs
     maxTau = maxTau_list[-1]
@@ -365,8 +369,8 @@ if __name__ == "__main__":
         # K_D = alpha * maxEigH
 
         # Or make the PD gains constant
-        K_P = 96 # gains[0] + 20 # 88.6
-        K_D = 13.6 # 13.5 # gains[2]
+        K_P = 111 #  88.6
+        K_D = 13.5 # 13.5 # gains[2]
 
         K_P_list.append(K_P)
         K_D_list.append(K_D)
@@ -384,6 +388,12 @@ if __name__ == "__main__":
         print "Damping: " + str(damping_list[n])
         
         kTau, k = kTau_list[n], k_list[n]
+        minEigBenv_a = minEigBenv_a_list[n]
+        minEigBenv_p = minEigBenv_p_list[n]
+        maxEigBenv = maxEigBenv_list[n]
+        kBenv_a = kBenv_a_list[n]
+        kBenv_p = kBenv_p_list[n]
+
         K_P = K_P_list[n]
         K_D = K_D_list[n]
 
@@ -416,40 +426,29 @@ if __name__ == "__main__":
     fig_3d_passive = plt.figure()
     ax_passive = fig_3d_passive.gca(projection='3d')
     ax_passive.set_xlabel(r"$||\tilde{x}_p||$")
-    ax_passive.set_ylabel("Environment Stiffness (N/m)")
+    ax_passive.set_ylabel("Task Sphere Radius (m)")
     ax_passive.set_zlabel(r"$||\dot{\tilde{x}}_p||$")
     ax_passive.set_xlim(0.0, 0.6) # position mag
-    ax_passive.set_ylim(0.0, 300) # radius is (0.0, 0.4)
+    ax_passive.set_ylim(0.0, 0.4) # radius is (0.0, 0.4)
     ax_passive.set_zlim(0.0, 2.0) # velocity mag
     ax_passive.invert_yaxis()
 
     fig_3d_active = plt.figure()
     ax_active = fig_3d_active.gca(projection='3d')
     ax_active.set_xlabel(r"$||\tilde{x}_a||$")
-    ax_active.set_ylabel("Environment Stiffness (N/m)")
+    ax_active.set_ylabel("Task Sphere Radius (m)")
     ax_active.set_zlabel(r"$||\dot{\tilde{x}}_a||$")
     ax_active.set_xlim(0.0, 6.0) # position mag
-    ax_active.set_ylim(0.0, 300) # radius is (0.0, 0.4)
+    ax_active.set_ylim(0.0, 0.4) # radius is (0.0, 0.4)
     ax_active.set_zlim(0.0, 20.0) # velocity mag
     ax_active.invert_yaxis()
 
-    # x_p, y_p, z_p, x_a, y_a, z_a = [], [], [], [], [], []
     for m in range(len(curve_p_total)):
-        # # Collect points for passive state surface plot
-        # x_p.extend(curve_p_total[m][:, 0].tolist()) # This gives x
-        # z_p.extend(curve_p_total[m][:, 1].tolist()) # This gives dx
-        # y_p.extend([mass_list[m]] * len(curve_p_total[m][:, 0].tolist()))
-        #
-        # # Collect points for active state surface plot
-        # x_a.extend(curve_a_total[m][:, 0].tolist()) # This gives x
-        # z_a.extend(curve_a_total[m][:, 1].tolist()) # This gives dx
-        # y_a.extend([mass_list[m]] * len(curve_a_total[m][:, 0].tolist()))
-
         # Plot active state curves
         # if len(curve_p_total[m][:, 0]) != 2:
         x_p = curve_p_total[m][:, 0] # This gives x
         z_p = curve_p_total[m][:, 1] # This gives dx
-        y_p = stiffness_list[m] * np.ones(np.size(x_p))
+        y_p = radius_list[m] * np.ones(np.size(x_p))
 
         ax_passive.plot(x_p, y_p, z_p)
 
@@ -458,21 +457,21 @@ if __name__ == "__main__":
         # if m < 120:
         x_a = curve_a_total[m][:, 0] # This gives x
         z_a = curve_a_total[m][:, 1] # This gives dx
-        y_a = stiffness_list[m] * np.ones(np.size(x_a))
+        y_a = radius_list[m] * np.ones(np.size(x_a))
 
         ax_active.plot(x_a, y_a, z_a)
 
         # Square where the selected stability region is
-        if m == 100:
-            points = np.array([[0, 100, 0], [6, 100, 0], [6, 100, 20], [0, 100, 20]])
-            x_square = [0, 6, 6, 0, 0]
-            y_square = [100, 100, 100, 100, 100]
-            z_square = [0, 0, 20, 20, 0]
-            ax_active.plot(x_square, y_square, z_square, linewidth=4, color='r')
+        if m == 41:
+            xa_square = [0, 6, 6, 0, 0]
+            ya_square = [0.1, 0.1, 0.1, 0.1, 0.1]
+            za_square = [0, 0, 20, 20, 0]
+            ax_active.plot(xa_square, ya_square, za_square, linewidth=4, color='r')
 
-
-    # surf_p = ax_passive.plot_trisurf(x_p, y_p, z_p)
-    # surf_a = ax_active.plot_trisurf(x_a, y_a, z_a)
+            xp_square = [0, 0.6, 0.6, 0, 0]
+            yp_square = [0.4, 0.4, 0.4, 0.4, 0.4]
+            zp_square = [0, 0, 2, 2, 0]
+            ax_passive.plot(xp_square, yp_square, zp_square, linewidth=4, color='r')
 
     plt.show()
 
