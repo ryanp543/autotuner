@@ -263,32 +263,38 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
 
     ax = fig2.add_subplot(6, 1, 1)
     plt.plot(t, x[:, 0], color='green')
+    plt.plot(t, x_d[:, 0], color='red')
     plt.ylabel("z (rad)") # + "\n"  + r"($10^{-2}$ rad)")
     plt.title("Joint Position")
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 2)
     plt.plot(t, x[:, 1], color='green')
+    plt.plot(t, x_d[:, 1], color='red')
     plt.ylabel(r"$\theta$ (rad)") # + "\n" + r"($10^{-2}$ rad)")
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 3)
     plt.plot(t, x[:, 2], color='green')
+    plt.plot(t, x_d[:, 2], color='red')
     plt.ylabel(r"$\phi$ (rad)") # + "\n" + r"($10^{-3}$ rad)")
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 4)
     plt.plot(t, x[:, 3], color='green')
+    plt.plot(t, x_d[:, 3], color='red')
     plt.ylabel(r"$q_1$ (rad)")
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 5)
     plt.plot(t, x[:, 4], color='green')
+    plt.plot(t, x_d[:, 4], color='red')
     plt.ylabel(r"$q_2$ (rad)")
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 6)
     plt.plot(t, x[:, 5], color='green')
+    plt.plot(t, x_d[:, 5], color='red')
     plt.ylabel(r"$q_3$ (rad)")
     plt.grid()
     plt.xlabel("Time (s)")
@@ -337,11 +343,6 @@ if __name__ == "__main__":
     damping = 10
     B_environment = np.asarray([[damping, 0, 0], [0, damping, 0], [0, 0, damping]])
 
-    # Create time parameters and axis
-    dt = 0.001
-    test_length = 10 # in seconds
-    t = np.asarray([n * dt for n in range(0, int(test_length/dt)+1)])
-
     # Comment out to calculate start position from contact_pt
     contact_point = np.asarray([0.542, -0.10475, 0])
     # x_init = getJointsFromEE(contact_point)
@@ -353,17 +354,34 @@ if __name__ == "__main__":
     a_hat_init = np.zeros((3))
     da_hat_init = np.zeros((3))
 
-    # Creating x_d and dx_d over time
-    dx_d = np.zeros((np.size(t), 6))
-    # xa_d = [1.0, -2.0, 0]
-    # xp_d = scipy.optimize.fmin(getXpTarget, x_init[:3], args=(xa_d, dx_d[-1,:3]), xtol=0.000001, disp=False)
-    # x_d_row = np.asarray([np.concatenate((xp_d, xa_d), axis=0)])
+    """Generating the x_d commands"""
+    # Create time parameters and axis
+    dt = 0.001
+    test_length = 30 # in seconds
+    t = np.asarray([n * dt for n in range(0, int(test_length/dt)+1)])
+
+    # x_d_row = np.asarray([-0.04927567, 0.01983959, 0.12133543, 0.05801089, -2.42606408, -0.46385972])
+    # x_d = np.tile(x_d_row, (np.size(t), 1))
 
     # final_ee_pos_des = np.asarray([0.542, -0.10475, 0.1])
     # x_d_row = getJointsFromEE(final_ee_pos_des)
+    x_d_row1 = np.asarray([-0.04927567, 0.01983959, 0.12133543, 0.05801089, -2.42606408, -0.46385972])
+    x_d1 = np.tile(x_d_row1, (np.size(t)/3, 1))
 
-    x_d_row = np.asarray([-0.04927567, 0.01983959, 0.12133543, 0.05801089, -2.42606408, -0.46385972])
-    x_d = np.tile(x_d_row, (np.size(t), 1))
+    # [0.642, -0.20475, 0.0]
+    x_d_row2 = np.asarray([-0.04707629, 0.01123942, 0.10893125, -0.25249009, -2.73478455, -0.22396274])
+    x_d2 = np.tile(x_d_row2, (np.size(t)/3, 1))
+
+    # final_ee_pos_des = np.asarray([0.642, -0.10475, 0.0])
+    x_d_row3 = np.asarray([-0.04703724, 0.01148404, 0.10806018, 0.0143714, -2.81555962, 0.0481915])
+    x_d3 = np.tile(x_d_row3, (np.size(t)/3+1, 1))
+
+    # Creating x_d and dx_d over time
+    x_d = np.concatenate((x_d1, x_d2, x_d3))
+    dx_d = np.zeros((np.size(t), 6))
+
+    """End generating the x_d commands"""
+
 
     # Simulate
     x, dx, a, da = simulate(x_init, dx_init, a_hat_init, da_hat_init, x_d, dx_d, dt, KP, KI, KD, K_environment, B_environment)

@@ -17,15 +17,17 @@ from __future__ import print_function
 import numpy as np
 import csv
 import time
+import math
 import scipy.optimize
 import matplotlib.pyplot as plt
 import klampt
 import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from klampt import vis
 
-FILEPATH_TRAJECTORY = './DynamicsInteractionTrajectory_default.csv'
+FILEPATH_TRAJECTORY = './DynamicsInteractionTrajectory_interact.csv'
 
 
 def ExtractTrajectoryData():
@@ -53,17 +55,17 @@ def ExtractTrajectoryData():
 
 
 def position():
-    x = np.asarray([0,
+    x = np.asarray([
                    link1.getWorldPosition([0, 0, 0])[0],
                    link2.getWorldPosition([0, 0, 0])[0],
                    link3.getWorldPosition([0, 0, 0])[0],
                    link4.getWorldPosition([0, 0, 0])[0]])
-    y = np.asarray([0,
+    y = np.asarray([
                    link1.getWorldPosition([0, 0, 0])[1],
                    link2.getWorldPosition([0, 0, 0.05275])[1],
                    link3.getWorldPosition([0, 0, 0])[1],
                    link4.getWorldPosition([0, 0, 0])[1]])
-    z = np.asarray([0,
+    z = np.asarray([
                    link1.getWorldPosition([0, 0, 0])[2],
                    link2.getWorldPosition([0, 0, 0])[2],
                    link3.getWorldPosition([0, 0, 0])[2],
@@ -72,18 +74,66 @@ def position():
     return (x, y, z)
 
 
-def step(k):
-    x_config = np.concatenate(([0.0, 0.0], x[k, 0], 0, x[k, 1:], 0), axis=None)
-    robot.setConfig(x_config)
-
-
 def getNewTime(frame):
     return frame * dt
 
 
+def drawChassis(x_conf):
+    # Set z pitch and roll based on configuration
+    z = x_conf[2]
+    pitch = x_conf[4]
+    roll = -x_conf[5]
+
+    # Draw chassis body
+    points = np.array([[-0.1, -0.15, 0.076],
+                       [0.25, -0.15, 0.076],
+                       [0.25, 0.15, 0.076],
+                       [-0.1, 0.15, 0.076],
+                       [-0.1, -0.15, 0.196],
+                       [0.25, -0.15, 0.196],
+                       [0.25, 0.15, 0.196],
+                       [-0.1, 0.15, 0.196]])
+
+    # Rotation and translation matrix
+    Rot_y = np.array([[math.cos(pitch), 0, math.sin(pitch)],
+                      [0, 1, 0],
+                      [-math.sin(pitch), 0, math.cos(pitch)]])
+    Rot_x = np.array([[1, 0, 0],
+                      [0, math.cos(roll), -math.sin(roll)],
+                      [0, math.sin(roll), math.cos(roll)]])
+    Rot = np.matmul(Rot_y, Rot_x)
+
+    trans_z = np.tile([0, 0, z], (np.shape(points)[0], 1))
+
+    # Rotation and translation of vertices
+    Z = np.zeros((8, 3))
+    for i in range(8):
+        Z[i, :] = np.dot(points[i, :], Rot)
+    Z = Z + trans_z
+
+    verts = [[Z[0], Z[1], Z[2], Z[3]],
+             [Z[4], Z[5], Z[6], Z[7]],
+             [Z[0], Z[1], Z[5], Z[4]],
+             [Z[2], Z[3], Z[7], Z[6]],
+             [Z[1], Z[2], Z[6], Z[5]],
+             [Z[4], Z[7], Z[3], Z[0]]]
+
+    return verts
+
+
 def animate(frame):
+    # Speed multiplier
+    mult = 5
+
     # Step to the next joint positions
-    step(frame)
+    k = frame * mult
+    x_config = np.concatenate(([0.0, 0.0], x[k, 0], 0, x[k, 1:], 0), axis=None)
+    robot.setConfig(x_config)
+
+    # Change chassis
+    vertices = drawChassis(x_config)
+    collection.set_verts(vertices)
+    collection.do_3d_projection(collection.axes.get_figure().canvas.get_renderer())
 
     # Calculate the new positions
     coords = position()
@@ -91,17 +141,18 @@ def animate(frame):
     line.set_3d_properties(coords[2])
 
     # Change the timer text
-    # time_text.set_text('time = %.2f' % getNewTime(frame))
+    time_text.set_text('time = %.1f' % getNewTime(k))
 
-    return line, # time_text
+    return line, time_text, collection
 
 
 def init():
     line.set_data([], [])
     line.set_3d_properties([])
-    # time_text.set_text('')
+    time_text.set_text('')
+    ax.add_collection3d(collection)
 
-    return line, # time_text
+    return line, time_text, collection
 
 
 if __name__ == "__main__":
@@ -114,20 +165,26 @@ if __name__ == "__main__":
     link3 = robot.link(8)
     link4 = robot.link(9)
 
+    print("Extracting trajectory from simulation .csv file...")
     x, dt, test_length = ExtractTrajectoryData()
 
+    print("Running simulation visualization...")
+    # Joint coords: [z pitch roll 3DOF]
     x_config = np.concatenate(([0.0, 0.0], x[0,0], 0, x[0,1:], 0), axis=None)
     # x_config = np.zeros(10)
     robot.setConfig(x_config)
 
-    # vis.add("world", world)
-    # vis.run()
-
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
-    line, = ax.plot([], [], [], 'o-', lw=2, mew=1)
-    # time_text = ax.text2D(0.05, 0.90, '', transform=ax.transAxes)
+    ax.view_init(elev=10, azim=-30)
+    line, = ax.plot([], [], [], 'o-', linewidth=2, color='k')
+    time_text = ax.text2D(0.05, 0.90, '', transform=ax.transAxes)
+
+    # Drawing chassis
+    vertices = drawChassis(x_config)
+    collection = Poly3DCollection(vertices, alpha=0, facecolor="cyan", linewidths=1, edgecolors='k')
+    ax.add_collection3d(collection)
 
     # Setting the axes properties
     ax.set_xlim3d([-0.25, 0.75])
@@ -139,8 +196,13 @@ if __name__ == "__main__":
     ax.set_zlim3d([0.0, 1.0])
     ax.set_zlabel('Z')
 
+    # coords = position()
+    # line.set_data(coords[:2])
+    # line.set_3d_properties(coords[2])
+    #
+    # plt.show()
 
     # Creating the Animation object fargs=(data, lines)
-    line_ani = animation.FuncAnimation(fig, animate, frames=2000, interval=1, blit=True, init_func=init)
+    line_ani = animation.FuncAnimation(fig, animate, interval=1, blit=True, init_func=init)
 
     plt.show()
