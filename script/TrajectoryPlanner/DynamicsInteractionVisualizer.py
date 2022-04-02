@@ -42,10 +42,11 @@ class Arrow3D(FancyArrowPatch):
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
         FancyArrowPatch.draw(self, renderer)
 
-    def update(self, xs3d, ys3d, zs3d):
+    def update_arrow_pos(self, xs3d, ys3d, zs3d):
         self._verts3d = xs3d, ys3d, zs3d
-        # xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
-        # self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+
+    def update_arrow_properties(self, lw, clr):
+        self.set(color=clr, linewidth=lw)
 
 
 def ExtractTrajectoryData():
@@ -103,10 +104,10 @@ def drawChassis(x_conf):
     roll = -x_conf[5]
 
     # Draw chassis body
-    points = np.array([[-0.1, -0.2, 0.076],
-                       [0.25, -0.2, 0.076],
-                       [0.25, 0.2, 0.076],
-                       [-0.1, 0.2, 0.076],
+    points = np.array([[-0.1, -0.2, 0.116],
+                       [0.25, -0.2, 0.116],
+                       [0.25, 0.2, 0.116],
+                       [-0.1, 0.2, 0.116],
                        [-0.1, -0.2, 0.196],
                        [0.25, -0.2, 0.196],
                        [0.25, 0.2, 0.196],
@@ -161,7 +162,11 @@ def animate(frame):
     # Change the timer text
     time_text.set_text('time = %.1f' % getNewTime(k))
 
-    return line, time_text, collection
+    # Update arrow positions
+    ee_arrow.update_arrow_pos(xs3d=[coords[0][3], contact[0]], ys3d=[coords[1][3], contact[1]],
+                              zs3d=[coords[2][3], contact[2]])
+
+    return line, time_text, collection, ee_arrow
 
 
 def init():
@@ -169,8 +174,10 @@ def init():
     line.set_3d_properties([])
     time_text.set_text('')
     ax.add_collection3d(collection)
+    ee_arrow.update_arrow_pos(xs3d=[contact[0], contact[0]], ys3d=[contact[1], contact[1]],
+                              zs3d=[contact[2], contact[2]])
 
-    return line, time_text, collection
+    return line, time_text, collection, ee_arrow
 
 
 if __name__ == "__main__":
@@ -184,20 +191,20 @@ if __name__ == "__main__":
     link4 = robot.link(9)
 
     print("Extracting trajectory from simulation .csv file...")
-    # x, dt, test_length = ExtractTrajectoryData()
+    x, dt, test_length = ExtractTrajectoryData()
 
     print("Running simulation visualization...")
     # Joint coords: [z pitch roll 3DOF]
-    x_config = np.zeros(10)
-    # x_config = np.concatenate(([0.0, 0.0], x[0,0], 0, x[0,1:], 0), axis=None)
+    # x_config = np.zeros(10)
+    x_config = np.concatenate(([0.0, 0.0], x[0,0], 0, x[0,1:], 0), axis=None)
     robot.setConfig(x_config)
-    contact_pt = link4.getWorldPosition([0, 0, 0])
+    contact = link4.getWorldPosition([0, 0, 0])
 
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = Axes3D(fig)
-    ax.view_init(elev=10, azim=0)
-    line, = ax.plot([], [], [], 'o-', linewidth=2, color='k')
+    ax.view_init(elev=0, azim=0)
+    line, = ax.plot([], [], [], 'o-', linewidth=2, color='blue')
     time_text = ax.text2D(0.05, 0.90, '', transform=ax.transAxes)
 
     # Drawing chassis
@@ -205,10 +212,17 @@ if __name__ == "__main__":
     collection = Poly3DCollection(vertices, alpha=0, facecolor="cyan", linewidths=1, edgecolors='k')
     ax.add_collection3d(collection)
 
+    # Spring arrows. Vertices[0] is the corners of the bottom square face
+    spring_arrows = []
+    for k in range(len(vertices[0])):
+        new_spring = Arrow3D([vertices[0][k][0], vertices[0][k][0]], [vertices[0][k][1], vertices[0][k][1]],
+                             [0, vertices[0][k][2]+0.01], lw=1, mutation_scale=10, color='green')
+        spring_arrows.append(new_spring)
+        ax.add_artist(spring_arrows[k])
+
     # End effector environmental force error
-    ee_arrow = Arrow3D([contact_pt[0], 0.25], [contact_pt[1], 0.25], [contact_pt[2], 0.25], arrowstyle="->",
-                       lw=2, mutation_scale=15)
-    ee_arrow.update([0, 0.25], [0, 0.25], [0, 0.25])
+    ee_arrow = Arrow3D([contact[0], 0.25], [contact[1], 0.25], [contact[2], 0.25], arrowstyle="->",
+                       lw=2, mutation_scale=15, color='red')
     ax.add_artist(ee_arrow)
 
     # Setting the axes properties
@@ -221,13 +235,13 @@ if __name__ == "__main__":
     ax.set_zlim3d([0.0, 1.0])
     ax.set_zlabel('Z')
 
-    coords = position()
-    line.set_data(coords[:2])
-    line.set_3d_properties(coords[2])
-
-    plt.show()
-
-    # # Creating the Animation object fargs=(data, lines)
-    # line_ani = animation.FuncAnimation(fig, animate, interval=1, blit=True, init_func=init)
+    # coords = position()
+    # line.set_data(coords[:2])
+    # line.set_3d_properties(coords[2])
     #
     # plt.show()
+
+    # Creating the Animation object fargs=(data, lines)
+    line_ani = animation.FuncAnimation(fig, animate, interval=1, blit=True, init_func=init)
+
+    plt.show()
