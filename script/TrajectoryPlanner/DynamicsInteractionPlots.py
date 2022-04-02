@@ -27,7 +27,7 @@ from SuspensionMatrices import Suspension_8legs
 # CONSTANTS AND FILEPATHS
 # Change filepath location path to your GenerateGainsConstants.csv (as if you were running this code from the
 # Trajectory Planner directory
-FILEPATH_INTERACTION_CSV = './DynamicsInteractionRadiusConstants.csv'
+FILEPATH_INTERACTION_CSV = './DynamicsInteractionConstants.csv'
 FILEPATH_DEFAULT_CSV = './GenerateGainsConstants_default.csv'
 
 # Function: Extract Data
@@ -304,9 +304,9 @@ def PlotLimitLineFigure(x_p, dx_p, x_a, dx_a, sus):
         x = x_a
         dx = dx_a
         labels = [r"$||\tilde{x}_a||$", r"$||\dot{\tilde{x}}_a||$"]
-        setlevels = [1000, 4000, 6000]
-        x_ticks = np.arange(1, 6, 1.5)
-        y_ticks = np.arange(0.0, 22, 5)
+        setlevels = [500, 1500]
+        x_ticks = np.arange(0.5, 3, 1)
+        y_ticks = np.arange(0.0, 12, 2.5)
         # plt.text(-0.02, 1, '(b)', fontsize=20)
     else:
         x = x_p
@@ -366,10 +366,10 @@ if __name__ == "__main__":
     for index in range(len(radius_list)):
         # # Calculate PD gains and add to the list
         # K_P = (alpha ** 2) * maxEigH + kG + (1 / alpha) * K_I + kTau_list[index]
-        # K_D = alpha * maxEigH
+        # K_D = alpha * maxEigH - minEigBenv_a_list[index]
 
         # Or make the PD gains constant
-        K_P = 111 #  88.6
+        K_P = 96 #  88.6
         K_D = 13.5 # 13.5 # gains[2]
 
         K_P_list.append(K_P)
@@ -426,20 +426,20 @@ if __name__ == "__main__":
     fig_3d_passive = plt.figure()
     ax_passive = fig_3d_passive.gca(projection='3d')
     ax_passive.set_xlabel(r"$||\tilde{x}_p||$")
-    ax_passive.set_ylabel("Task Sphere Radius (m)")
+    ax_passive.set_ylabel("Environment Damping (Ns/m)")
     ax_passive.set_zlabel(r"$||\dot{\tilde{x}}_p||$")
     ax_passive.set_xlim(0.0, 0.6) # position mag
-    ax_passive.set_ylim(0.0, 0.4) # radius is (0.0, 0.4)
+    ax_passive.set_ylim(0.0, 15) # radius is (0.0, 0.4)
     ax_passive.set_zlim(0.0, 2.0) # velocity mag
     ax_passive.invert_yaxis()
 
     fig_3d_active = plt.figure()
     ax_active = fig_3d_active.gca(projection='3d')
     ax_active.set_xlabel(r"$||\tilde{x}_a||$")
-    ax_active.set_ylabel("Task Sphere Radius (m)")
+    ax_active.set_ylabel("Environment Damping (Ns/m)")
     ax_active.set_zlabel(r"$||\dot{\tilde{x}}_a||$")
     ax_active.set_xlim(0.0, 6.0) # position mag
-    ax_active.set_ylim(0.0, 0.4) # radius is (0.0, 0.4)
+    ax_active.set_ylim(0.0, 15) # radius is (0.0, 0.4)
     ax_active.set_zlim(0.0, 20.0) # velocity mag
     ax_active.invert_yaxis()
 
@@ -448,7 +448,7 @@ if __name__ == "__main__":
         # if len(curve_p_total[m][:, 0]) != 2:
         x_p = curve_p_total[m][:, 0] # This gives x
         z_p = curve_p_total[m][:, 1] # This gives dx
-        y_p = radius_list[m] * np.ones(np.size(x_p))
+        y_p = damping_list[m] * np.ones(np.size(x_p))
 
         ax_passive.plot(x_p, y_p, z_p)
 
@@ -457,19 +457,19 @@ if __name__ == "__main__":
         # if m < 120:
         x_a = curve_a_total[m][:, 0] # This gives x
         z_a = curve_a_total[m][:, 1] # This gives dx
-        y_a = radius_list[m] * np.ones(np.size(x_a))
+        y_a = damping_list[m] * np.ones(np.size(x_a))
 
         ax_active.plot(x_a, y_a, z_a)
 
         # Square where the selected stability region is
-        if m == 41:
-            xa_square = [0, 6, 6, 0, 0]
-            ya_square = [0.1, 0.1, 0.1, 0.1, 0.1]
-            za_square = [0, 0, 20, 20, 0]
+        if m == 100:
+            xa_square = [0, 3, 3, 0, 0]
+            ya_square = [10, 10, 10, 10, 10]
+            za_square = [0, 0, 10, 10, 0]
             ax_active.plot(xa_square, ya_square, za_square, linewidth=4, color='r')
 
             xp_square = [0, 0.6, 0.6, 0, 0]
-            yp_square = [0.4, 0.4, 0.4, 0.4, 0.4]
+            yp_square = [10, 10, 10, 10, 10]
             zp_square = [0, 0, 2, 2, 0]
             ax_passive.plot(xp_square, yp_square, zp_square, linewidth=4, color='r')
 

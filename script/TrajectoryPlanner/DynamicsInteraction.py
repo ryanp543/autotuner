@@ -363,11 +363,11 @@ if __name__ == "__main__":
     stiffness_list = [x * 1 for x in range(1, 301)]
 
     # Initializing environmental damping matrix (note: units are Ns/m)
-    damping = 0
+    damping = 10
     damping_list = [x * 0.1 for x in range(1, 151)]
 
     # Initializing constraint based on sphere of task space
-    task_radius = 0.1
+    task_radius = 0.2
     task_radius_list = [x * 0.002 for x in range(1, 201)]
 
     # Define contact point
@@ -389,9 +389,9 @@ if __name__ == "__main__":
                             "minEigBenv_a", "minEigBenv_p", "maxEigBenv", "kBenv_a", "kBenv_p",
                             "alpha1", "alpha2_r1", "alpha2_r2", "alpha2_r3", "alpha2_r4"])
 
-        for task_radius in task_radius_list:
+        # for task_radius in task_radius_list:
         # for stiffness in stiffness_list:
-        # for damping in damping_list:
+        for damping in damping_list:
             print "Task radius: " + str(task_radius)
             print "Stiffness: " + str(stiffness)
             print "Damping: " + str(damping)

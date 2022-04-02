@@ -21,13 +21,31 @@ import math
 import scipy.optimize
 import matplotlib.pyplot as plt
 import klampt
-import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D, proj3d
+from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from klampt import vis
 
 FILEPATH_TRAJECTORY = './DynamicsInteractionTrajectory_interact.csv'
+
+
+class Arrow3D(FancyArrowPatch):
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        FancyArrowPatch.__init__(self, (0,0), (0,0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+        FancyArrowPatch.draw(self, renderer)
+
+    def update(self, xs3d, ys3d, zs3d):
+        self._verts3d = xs3d, ys3d, zs3d
+        # xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        # self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
 
 
 def ExtractTrajectoryData():
@@ -85,14 +103,14 @@ def drawChassis(x_conf):
     roll = -x_conf[5]
 
     # Draw chassis body
-    points = np.array([[-0.1, -0.15, 0.076],
-                       [0.25, -0.15, 0.076],
-                       [0.25, 0.15, 0.076],
-                       [-0.1, 0.15, 0.076],
-                       [-0.1, -0.15, 0.196],
-                       [0.25, -0.15, 0.196],
-                       [0.25, 0.15, 0.196],
-                       [-0.1, 0.15, 0.196]])
+    points = np.array([[-0.1, -0.2, 0.076],
+                       [0.25, -0.2, 0.076],
+                       [0.25, 0.2, 0.076],
+                       [-0.1, 0.2, 0.076],
+                       [-0.1, -0.2, 0.196],
+                       [0.25, -0.2, 0.196],
+                       [0.25, 0.2, 0.196],
+                       [-0.1, 0.2, 0.196]])
 
     # Rotation and translation matrix
     Rot_y = np.array([[math.cos(pitch), 0, math.sin(pitch)],
@@ -101,7 +119,7 @@ def drawChassis(x_conf):
     Rot_x = np.array([[1, 0, 0],
                       [0, math.cos(roll), -math.sin(roll)],
                       [0, math.sin(roll), math.cos(roll)]])
-    Rot = np.matmul(Rot_y, Rot_x)
+    Rot = np.matmul(Rot_x, Rot_y)
 
     trans_z = np.tile([0, 0, z], (np.shape(points)[0], 1))
 
@@ -123,7 +141,7 @@ def drawChassis(x_conf):
 
 def animate(frame):
     # Speed multiplier
-    mult = 5
+    mult = 10
 
     # Step to the next joint positions
     k = frame * mult
@@ -166,18 +184,19 @@ if __name__ == "__main__":
     link4 = robot.link(9)
 
     print("Extracting trajectory from simulation .csv file...")
-    x, dt, test_length = ExtractTrajectoryData()
+    # x, dt, test_length = ExtractTrajectoryData()
 
     print("Running simulation visualization...")
     # Joint coords: [z pitch roll 3DOF]
-    x_config = np.concatenate(([0.0, 0.0], x[0,0], 0, x[0,1:], 0), axis=None)
-    # x_config = np.zeros(10)
+    x_config = np.zeros(10)
+    # x_config = np.concatenate(([0.0, 0.0], x[0,0], 0, x[0,1:], 0), axis=None)
     robot.setConfig(x_config)
+    contact_pt = link4.getWorldPosition([0, 0, 0])
 
     # Attaching 3D axis to the figure
     fig = plt.figure()
-    ax = p3.Axes3D(fig)
-    ax.view_init(elev=10, azim=-30)
+    ax = Axes3D(fig)
+    ax.view_init(elev=10, azim=0)
     line, = ax.plot([], [], [], 'o-', linewidth=2, color='k')
     time_text = ax.text2D(0.05, 0.90, '', transform=ax.transAxes)
 
@@ -185,6 +204,12 @@ if __name__ == "__main__":
     vertices = drawChassis(x_config)
     collection = Poly3DCollection(vertices, alpha=0, facecolor="cyan", linewidths=1, edgecolors='k')
     ax.add_collection3d(collection)
+
+    # End effector environmental force error
+    ee_arrow = Arrow3D([contact_pt[0], 0.25], [contact_pt[1], 0.25], [contact_pt[2], 0.25], arrowstyle="->",
+                       lw=2, mutation_scale=15)
+    ee_arrow.update([0, 0.25], [0, 0.25], [0, 0.25])
+    ax.add_artist(ee_arrow)
 
     # Setting the axes properties
     ax.set_xlim3d([-0.25, 0.75])
@@ -196,13 +221,13 @@ if __name__ == "__main__":
     ax.set_zlim3d([0.0, 1.0])
     ax.set_zlabel('Z')
 
-    # coords = position()
-    # line.set_data(coords[:2])
-    # line.set_3d_properties(coords[2])
-    #
-    # plt.show()
-
-    # Creating the Animation object fargs=(data, lines)
-    line_ani = animation.FuncAnimation(fig, animate, interval=1, blit=True, init_func=init)
+    coords = position()
+    line.set_data(coords[:2])
+    line.set_3d_properties(coords[2])
 
     plt.show()
+
+    # # Creating the Animation object fargs=(data, lines)
+    # line_ani = animation.FuncAnimation(fig, animate, interval=1, blit=True, init_func=init)
+    #
+    # plt.show()
