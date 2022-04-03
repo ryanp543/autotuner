@@ -266,6 +266,7 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.plot(t, x_d[:, 0], color='red')
     plt.ylabel("z (rad)") # + "\n"  + r"($10^{-2}$ rad)")
     plt.title("Joint Position")
+    plt.legend(["Position", "Reference"])
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 2)

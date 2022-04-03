@@ -141,9 +141,6 @@ def drawChassis(x_conf):
 
 
 def animate(frame):
-    # Speed multiplier
-    mult = 10
-
     # Step to the next joint positions
     k = frame * mult
     x_config = np.concatenate(([0.0, 0.0], x[k, 0], 0, x[k, 1:], 0), axis=None)
@@ -162,22 +159,34 @@ def animate(frame):
     # Change the timer text
     time_text.set_text('time = %.1f' % getNewTime(k))
 
-    # Update arrow positions
+    # Update end effector environment force arrow positions
     ee_arrow.update_arrow_pos(xs3d=[coords[0][3], contact[0]], ys3d=[coords[1][3], contact[1]],
                               zs3d=[coords[2][3], contact[2]])
+    # mag = np.linalg.norm(np.array([coords[0][3]-contact[0], coords[1][3]-contact[1], coords[2][3]-contact[2]]))
+    # new_lw = 4*mag/task_rad
+    # ee_arrow.update_arrow_properties(lw=new_lw, clr='red')
 
-    return line, time_text, collection, ee_arrow
+    # Update spring arrow positions
+    for n in range(len(sus_arrows)):
+        sus_arrows[n].update_arrow_pos(xs3d=[vertices[0][n][0], vertices[0][n][0]],
+                                          ys3d=[vertices[0][n][1], vertices[0][n][1]],
+                                          zs3d=[0, vertices[0][n][2] + 0.01])
+
+    return sus_arrows[0], sus_arrows[1], sus_arrows[2], sus_arrows[3], collection, line, time_text, ee_arrow
 
 
 def init():
+    for n in range(len(sus_arrows)):
+        sus_arrows[n].update_arrow_pos(xs3d=[0,0], ys3d=[0,0], zs3d=[0,0])
+
+    ax.add_collection3d(collection)
     line.set_data([], [])
     line.set_3d_properties([])
     time_text.set_text('')
-    ax.add_collection3d(collection)
     ee_arrow.update_arrow_pos(xs3d=[contact[0], contact[0]], ys3d=[contact[1], contact[1]],
                               zs3d=[contact[2], contact[2]])
 
-    return line, time_text, collection, ee_arrow
+    return sus_arrows[0], sus_arrows[1], sus_arrows[2], sus_arrows[3], collection, line, time_text, ee_arrow
 
 
 if __name__ == "__main__":
@@ -203,30 +212,47 @@ if __name__ == "__main__":
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = Axes3D(fig)
-    ax.view_init(elev=0, azim=0)
-    line, = ax.plot([], [], [], 'o-', linewidth=2, color='blue')
+    ax.view_init(elev=20, azim=-60)
     time_text = ax.text2D(0.05, 0.90, '', transform=ax.transAxes)
 
-    # Drawing chassis
+    # Get vertices of the chassis
     vertices = drawChassis(x_config)
-    collection = Poly3DCollection(vertices, alpha=0, facecolor="cyan", linewidths=1, edgecolors='k')
-    ax.add_collection3d(collection)
 
     # Spring arrows. Vertices[0] is the corners of the bottom square face
-    spring_arrows = []
+    sus_arrows = []
     for k in range(len(vertices[0])):
         new_spring = Arrow3D([vertices[0][k][0], vertices[0][k][0]], [vertices[0][k][1], vertices[0][k][1]],
                              [0, vertices[0][k][2]+0.01], lw=1, mutation_scale=10, color='green')
-        spring_arrows.append(new_spring)
-        ax.add_artist(spring_arrows[k])
+        sus_arrows.append(new_spring)
+        ax.add_artist(sus_arrows[k])
+
+    # Drawing robotic arm skeleton
+    line, = ax.plot([], [], [], 'o-', linewidth=2, color='blue')
+
+    # Drawing chassis
+    collection = Poly3DCollection(vertices, alpha=0.25, facecolor="green", linewidths=1, edgecolors='k')
+    ax.add_collection3d(collection)
 
     # End effector environmental force error
     ee_arrow = Arrow3D([contact[0], 0.25], [contact[1], 0.25], [contact[2], 0.25], arrowstyle="->",
                        lw=2, mutation_scale=15, color='red')
     ax.add_artist(ee_arrow)
 
+    # Plot sphere
+    task_rad = 0.2
+    u = np.linspace(0, 2*np.pi, 100)
+    v = np.linspace(0, np.pi, 100)
+
+    x_sphere = task_rad * np.outer(np.cos(u), np.sin(v)) + contact[0]
+    y_sphere = task_rad * np.outer(np.sin(u), np.sin(v)) + contact[1]
+    z_sphere = task_rad * np.outer(np.ones(np.size(u)), np.cos(v)) + contact[2]
+
+    ax.plot_surface(x_sphere, y_sphere, z_sphere, rstride=4, cstride=4, color='y', linewidth=0, alpha=0.25)
+    ax.plot(task_rad*np.sin(u)+contact[0], task_rad*np.cos(u)+contact[1], 0, color='k', linestyle='dashed')
+    ax.plot([contact[0]]*100, task_rad*np.sin(u)+contact[1], task_rad*np.cos(u)+contact[2], color='k', linestyle='dashed')
+
     # Setting the axes properties
-    ax.set_xlim3d([-0.25, 0.75])
+    ax.set_xlim3d([-0.2, 0.8])
     ax.set_xlabel('X')
 
     ax.set_ylim3d([-0.5, 0.5])
@@ -241,7 +267,11 @@ if __name__ == "__main__":
     #
     # plt.show()
 
+    # Speed multiplier
+    mult = 20
+
     # Creating the Animation object fargs=(data, lines)
-    line_ani = animation.FuncAnimation(fig, animate, interval=1, blit=True, init_func=init)
+    line_ani = animation.FuncAnimation(fig, animate, frames=2001, interval=1, blit=True, init_func=init, repeat=False)
+    # line_ani.save('animation.mp4', writer='ffmpeg', fps=30)
 
     plt.show()
