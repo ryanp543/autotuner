@@ -63,8 +63,8 @@ def run_motion(q_d, u, T, t_cmd, dt):
 # Runs each position command from the .csv file containing the optimized trajectory plans. Records and appends the
 # actual states from the respective ROS topics to a 2D list for plotting later.
 def run_motion_sets():
-    global t_start, t, t1, t2, t3, qC_r, qC_p, q1, q2, q3, q_d
-    t_set, t1_set, t2_set, t3_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set = [], [], [], [], [], [], [], [], []
+    global t_start, t, t1, t2, t3, qC_z, qC_r, qC_p, q1, q2, q3, q_d
+    t_set, t1_set, t2_set, t3_set, qC_z_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set = [], [], [], [], [], [], [], [], [], []
     sim_count = 1
 
     # Open and convert .csv file entries into list of floats
@@ -99,23 +99,24 @@ def run_motion_sets():
         t1_set.append(t1)
         t2_set.append(t2)
         t3_set.append(t3)
+        qC_z_set.append(qC_z)
         qC_r_set.append(qC_r)
         qC_p_set.append(qC_p)
         q1_set.append(q1)
         q2_set.append(q2)
         q3_set.append(q3)
         reset_simulation()
-        t, t1, t2, t3, qC_r, qC_p, q1, q2, q3 = [], [], [], [], [], [], [], [], []
+        t, t1, t2, t3, qC_z, qC_r, qC_p, q1, q2, q3 = [], [], [], [], [], [], [], [], [], []
         t_start = rospy.get_time()
         sim_count += 1
 
-    return t_set, t1_set, t2_set, t3_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set
+    return t_set, t1_set, t2_set, t3_set, qC_z_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set
 
 
 # Function: Chassis State Callback
 # Appends the next recorded state of the chassis pitch and roll
 def callback_chassis(link_states):
-    global t, qC_r, qC_p, t_start
+    global t, qC_z, qC_r, qC_p, t_start
     ind_chassis = link_states.name.index("robot::link_chassis") # "robot::Link_1"
     ind_l1 = link_states.name.index("robot::Link_1")
     ind_l2 = link_states.name.index("robot::Link_2")
@@ -123,6 +124,7 @@ def callback_chassis(link_states):
 
     # x is roll, y is pitch, z is yaw
     t.append(rospy.get_time() - t_start)
+    qC_z.append(link_states.pose[ind_chassis].position.z)
     qC_r.append(link_states.pose[ind_chassis].orientation.x)
     qC_p.append(link_states.pose[ind_chassis].orientation.y)
 
@@ -275,13 +277,13 @@ if __name__ == "__main__":
     time.sleep(1)
 
     t, t1, t2, t3 = [], [], [], []
-    qC_r, qC_p, q1, q2, q3 = [], [], [], [], []
+    qC_z, qC_r, qC_p, q1, q2, q3 = [], [], [], [], [], []
     t_start = rospy.get_time()
 
     # q1_d = [-2.0944, -1.0472, 1.0472, 2.0944] 
     # q2_d = [-1.0472, -2.0944, -3.1415]
     # q3_d = [0.5236, 1.000, 2.094]
-    t_set, t1_set, t2_set, t3_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set = run_motion_sets()
+    t_set, t1_set, t2_set, t3_set, qC_z_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set = run_motion_sets()
 
     # ADD DATA TO CSV FILE
     # Chassis angle data
@@ -290,6 +292,7 @@ if __name__ == "__main__":
         csvwriter = csv.writer(myfile, delimiter=',')
         for k in range(0, len(t_set)):
             csvwriter.writerow(t_set[k])
+            csvwriter.writerow(qC_z_set[k])
             csvwriter.writerow(qC_r_set[k])
             csvwriter.writerow(qC_p_set[k])
 
@@ -338,7 +341,17 @@ if __name__ == "__main__":
     plt.figure(1, figsize=(10,5), dpi=80)
     plt.rc('font', size=20)
     plt.subplots_adjust(left=0.17, bottom=0.15)
-    plt.subplot(2, 1, 1)
+
+    plt.subplot(3, 1, 1)
+    for k in range(len(t_set)):
+        avg_qCz_ss = sum(qC_z_set[k][-100:len(qC_z_set[k])]) / 100
+        plt.plot(t_set[k], [qC_z_set[k][g]-avg_qCz_ss for g in range(0, len(qC_z_set[k]))]) #, label=labels[k])
+    plt.ylabel("z")
+    plt.xlabel("Time (s)")
+    # plt.ylim((-0.005, 0.005))
+    plt.grid()
+
+    plt.subplot(3, 1, 3)
     for k in range(len(t_set)):
         avg_qCr_ss = sum(qC_r_set[k][-100:len(qC_r_set[k])]) / 100
         plt.plot(t_set[k], [qC_r_set[k][g]-avg_qCr_ss for g in range(0, len(qC_r_set[k]))]) #, label=labels[k])
@@ -347,7 +360,7 @@ if __name__ == "__main__":
     plt.ylim((-0.005, 0.005))
     plt.grid()
     #plt.legend(loc='center left', bbox_to_anchor=(1,0.5), fontsize='x-small')
-    plt.subplot(2, 1, 2)
+    plt.subplot(3, 1, 2)
     for k in range(len(t_set)):
         avg_qCp_ss = sum(qC_p_set[k][-100:len(qC_p_set[k])]) / 100
         plt.plot(t_set[k], [qC_p_set[k][g]-avg_qCp_ss for g in range(0, len(qC_p_set[k]))]) #, label=labels[k])

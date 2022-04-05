@@ -90,7 +90,7 @@ if __name__ == "__main__":
     q2_d = [-1.0472, -2.0944, -3.1415]
     q3_d = [0.5236, 1.000, 2.094]
     t_set, t1_set, t2_set, t3_set = [], [], [], []
-    qC_r_set, qC_p_set, q1_set, q2_set, q3_set = [], [], [], [], []
+    qC_z_set, qC_r_set, qC_p_set, q1_set, q2_set, q3_set = [], [], [], [], [], []
 
     # [-2.0944, -1.0472, 0.5236] = set 1
     # [-1.0472, -2.0944, 1.000] = set 14
@@ -100,17 +100,18 @@ if __name__ == "__main__":
 
     # ADD DATA TO CSV FILE
     # Chassis angle data
-    filepath = './src/autotuner/script/SimulationData/NoneData/sim_data_chassis.csv'
+    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_chassis.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
         for row in csvreader:
             data.append(row)
         data = [[float(y) for y in x] for x in data]
-        for row in range(0, len(data), 3):
+        for row in range(0, len(data), 4):
             t_set.append(data[row][:])
-            qC_r_set.append(data[row + 1][:])
-            qC_p_set.append(data[row + 2][:])
+            qC_z_set.append(data[row + 1][:])
+            qC_r_set.append(data[row + 2][:])
+            qC_p_set.append(data[row + 3][:])
 
             # if row not in [18, 72, 99, 21, 24, 51, 78, 102, 105, 45]:
             #     t_set.append(data[row][:])
@@ -118,7 +119,7 @@ if __name__ == "__main__":
             #     qC_p_set.append(data[row+2][:])
 
     # Joint 1 data
-    filepath = './src/autotuner/script/SimulationData/NoneData/sim_data_joint1.csv'
+    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_joint1.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -134,7 +135,7 @@ if __name__ == "__main__":
             #     q1_set.append(data[row+1][:])
 
     # Joint 2 data
-    filepath = './src/autotuner/script/SimulationData/NoneData/sim_data_joint2.csv'
+    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_joint2.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -150,7 +151,7 @@ if __name__ == "__main__":
             #     q2_set.append(data[row+1][:])
 
     # Joint 3 data
-    filepath = './src/autotuner/script/SimulationData/NoneData/sim_data_joint3.csv'
+    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_joint3.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -187,16 +188,16 @@ if __name__ == "__main__":
 
     print("Generating plots...")
     fig = plt.figure(1, figsize=(10,22), dpi=80)
-    plt.rc('font', size=30)
+    plt.rc('font', size=25)
 
 
-    ax = fig.add_subplot(5,1,1)
+    ax = fig.add_subplot(6,1,1)
     ax.tick_params(width=4, length=8)
     ax.xaxis.set_ticklabels([])
     plt.setp(ax.spines.values(), linewidth=4)
     # plt.text(-2, 3, "(b)", fontsize=30)
     plt.subplots_adjust(left=0.23, top=0.95, bottom=0.1)
-    for k in num: # range(len(t1_set)):
+    for k in range(len(t1_set)): # num:
         plt.plot(t1_set[k][:-50], q1_set[k][:-50]) #, label=labels[k])
     plt.ylabel(r"$q_1 - {q_1}^{ref}$"+"\n(rad)")
     # plt.xlabel("Time (s)")
@@ -206,11 +207,11 @@ if __name__ == "__main__":
     plt.grid()
     #plt.legend(loc='center left', bbox_to_anchor=(1,0.5), fontsize='x-small')
 
-    ax = fig.add_subplot(5,1,2)
+    ax = fig.add_subplot(6,1,2)
     ax.tick_params(width=4, length=8)
     ax.xaxis.set_ticklabels([])
     plt.setp(ax.spines.values(), linewidth=4)
-    for k in num: # range(len(t2_set)):
+    for k in range(len(t2_set)): # num:
         plt.plot(t2_set[k][:-50], q2_set[k][:-50]) #, label=labels[k])
     plt.ylabel(r"$q_2 - {q_2}^{ref}$"+"\n(rad)")
     # plt.xlabel("Time (s)")
@@ -220,11 +221,11 @@ if __name__ == "__main__":
     plt.grid()
     #plt.legend(loc='center left', bbox_to_anchor=(1,0.5), fontsize='x-small')
 
-    ax = fig.add_subplot(5,1,3)
+    ax = fig.add_subplot(6,1,3)
     ax.tick_params(width=4, length=8)
     ax.xaxis.set_ticklabels([])
     plt.setp(ax.spines.values(), linewidth=4)
-    for k in num: # range(len(t3_set)):
+    for k in range(len(t3_set)): # num:
         plt.plot(t3_set[k][:-50], q3_set[k][:-50]) #, label=labels[k])
     plt.ylabel(r"$q_3 - {q_3}^{ref}$"+"\n(rad)")
     # plt.xlabel("Time (s)")
@@ -235,12 +236,29 @@ if __name__ == "__main__":
     plt.grid()
     #plt.legend(loc='center left', bbox_to_anchor=(1,0.5), fontsize='x-small')
 
-    ax = fig.add_subplot(5,1,4)
+    ax = fig.add_subplot(6,1,4)
     ax.tick_params(width=4, length=8)
     ax.xaxis.set_ticklabels([])
     plt.setp(ax.spines.values(), linewidth=4)
     # plt.text(-2, 0.006, "(d)", fontsize=30)
-    for k in num: # range(len(t_set)):
+    for k in range(len(t_set)): # num:
+        avg_qCz_ss = sum(qC_z_set[k][-100:len(qC_z_set[k])]) / 100
+        plt.plot(t_set[k][:-500], [1000*(qC_z_set[k][g]-avg_qCz_ss) for g in range(0, len(qC_z_set[k]))][:-500]) #, label=labels[k])
+    plt.ylabel(r"$z - {z}^{ref}$"+ "\n" + "(mm)")
+    # plt.xlabel("Time (s)")
+    plt.yticks(np.arange(-9, 13.5, 4.5))
+    plt.ylim((-9, 9))
+    plt.xticks(np.arange(0, 6, 1))
+    # ax.autoscale()
+    plt.grid()
+    #plt.legend(loc='center left', bbox_to_anchor=(1,0.5), fontsize='x-small')
+
+    ax = fig.add_subplot(6,1,5)
+    ax.tick_params(width=4, length=8)
+    ax.xaxis.set_ticklabels([])
+    plt.setp(ax.spines.values(), linewidth=4)
+    # plt.text(-2, 0.006, "(d)", fontsize=30)
+    for k in range(len(t_set)): # num:
         avg_qCr_ss = sum(qC_r_set[k][-100:len(qC_r_set[k])]) / 100
         plt.plot(t_set[k][:-500], [1000*(qC_r_set[k][g]-avg_qCr_ss) for g in range(0, len(qC_r_set[k]))][:-500]) #, label=labels[k])
     plt.ylabel(r"$\phi - {\phi}^{ref}$"+ "\n" + r"($10^{-3}$ rad)")
@@ -252,10 +270,10 @@ if __name__ == "__main__":
     plt.grid()
     #plt.legend(loc='center left', bbox_to_anchor=(1,0.5), fontsize='x-small')
 
-    ax = fig.add_subplot(5,1,5)
+    ax = fig.add_subplot(6,1,6)
     ax.tick_params(width=4, length=8)
     plt.setp(ax.spines.values(), linewidth=4)
-    for k in num: # range(len(t_set)):
+    for k in range(len(t_set)): # num:
         avg_qCp_ss = sum(qC_p_set[k][-100:len(qC_p_set[k])]) / 100
         plt.plot(t_set[k][:-500], [100*(qC_p_set[k][g]-avg_qCp_ss) for g in range(0, len(qC_p_set[k]))][:-500]) #, label=labels[k])
     plt.ylabel(r"$\theta - {\theta}^{ref}$"+ "\n" + r"($10^{-2}$ rad)")
