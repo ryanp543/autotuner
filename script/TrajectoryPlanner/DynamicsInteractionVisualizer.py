@@ -26,8 +26,6 @@ from mpl_toolkits.mplot3d import Axes3D, proj3d
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-from klampt import vis
-
 FILEPATH_TRAJECTORY = './DynamicsInteractionTrajectory_interact.csv'
 
 
@@ -210,7 +208,7 @@ if __name__ == "__main__":
     contact = link4.getWorldPosition([0, 0, 0])
 
     # Attaching 3D axis to the figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10,10))
     ax = Axes3D(fig)
     ax.view_init(elev=20, azim=-60)
     time_text = ax.text2D(0.05, 0.90, '', transform=ax.transAxes)
@@ -268,10 +266,10 @@ if __name__ == "__main__":
     # plt.show()
 
     # Speed multiplier
-    mult = 20
+    mult = 30
 
     # Creating the Animation object fargs=(data, lines)
     line_ani = animation.FuncAnimation(fig, animate, frames=2001, interval=1, blit=True, init_func=init, repeat=False)
-    # line_ani.save('animation.mp4', writer='ffmpeg', fps=30)
+    # line_ani.save('animation.mp4', fps=30)
 
     plt.show()
