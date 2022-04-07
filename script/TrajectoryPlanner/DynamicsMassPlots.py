@@ -341,7 +341,7 @@ if __name__ == "__main__":
 
     # Set PID gains based on variation in masses (I gain and alphas held constant)
     # K_P, K_I, K_D = gains[0], gains[1], gains[2] # default .csv values
-    K_I = 30.0
+    K_I = 25.0
     alpha = 0.5
     K_P_list = []
     K_D_list = []
@@ -349,14 +349,10 @@ if __name__ == "__main__":
         # # Calculate PD gains and add to the list
         K_P = (alpha ** 2) * maxEigH_list[index] + kG_list[index] + (1 / alpha) * K_I
         K_D = alpha * maxEigH_list[index]
-
-        if index == 120:
-            print K_P
-            print K_D
             
         # Or make the PD gains constant
-        K_P = 85.0 # gains[0] # 85.0 for 2.4 kg, 70.596 for 1.2 kg
-        K_D = 17.0 # gains[2] # 16.0 for 2.4 kg, 13.944 for 1.2 kg
+        K_P = 85 # gains[0] # 85.0 for 2.4 kg, 70.596 for 1.2 kg
+        K_D = 16 # gains[2] # 16.0 for 2.4 kg, 13.944 for 1.2 kg
 
         K_P_list.append(K_P)
         K_D_list.append(K_D)
@@ -398,8 +394,8 @@ if __name__ == "__main__":
         curve_p_total.append(curve_p)                               # note curve_p_total is a list of np.array objects
 
         # Plot stability region when passive states are held at zero
-        x_a = np.linspace(0, 3, 60) # (0, 6, 120)
-        dx_a = np.linspace(0, 10, 60) # (0, 20, 120)
+        x_a = np.linspace(0, 6, 60) # (0, 6, 120)
+        dx_a = np.linspace(0, 20, 60) # (0, 20, 120)
         x_p = np.zeros(np.size(x_a))
         dx_p = np.zeros(np.size(dx_a))
 
@@ -428,30 +424,20 @@ if __name__ == "__main__":
     ax_active.set_xlabel(r"$||\tilde{x}_a||$")
     ax_active.set_ylabel("Added Mass (kg)")
     ax_active.set_zlabel(r"$||\dot{\tilde{x}}_a||$")
-    ax_active.set_xlim(0.0, 3.0) # position mag
+    ax_active.set_xlim(0.0, 6.0) # position mag
     ax_active.set_ylim(0.0, 2.5) # mass
-    ax_active.set_zlim(0.0, 10.0) # velocity mag
+    ax_active.set_zlim(0.0, 20.0) # velocity mag
     ax_active.invert_yaxis()
 
-    # x_p, y_p, z_p, x_a, y_a, z_a = [], [], [], [], [], []
+
     for m in range(len(curve_p_total)):
-        # # Collect points for passive state surface plot
-        # x_p.extend(curve_p_total[m][:, 0].tolist()) # This gives x
-        # z_p.extend(curve_p_total[m][:, 1].tolist()) # This gives dx
-        # y_p.extend([mass_list[m]] * len(curve_p_total[m][:, 0].tolist()))
-        #
-        # # Collect points for active state surface plot
-        # x_a.extend(curve_a_total[m][:, 0].tolist()) # This gives x
-        # z_a.extend(curve_a_total[m][:, 1].tolist()) # This gives dx
-        # y_a.extend([mass_list[m]] * len(curve_a_total[m][:, 0].tolist()))
-
         # Plot active state curves
-        if len(curve_p_total[m][:, 0]) != 2:
-            x_p = curve_p_total[m][:, 0] # This gives x
-            z_p = curve_p_total[m][:, 1] # This gives dx
-            y_p = mass_list[m] * np.ones(np.size(x_p))
+        # if len(curve_p_total[m][:, 0]) != 2:
+        x_p = curve_p_total[m][:, 0] # This gives x
+        z_p = curve_p_total[m][:, 1] # This gives dx
+        y_p = mass_list[m] * np.ones(np.size(x_p))
 
-            ax_passive.plot(x_p, y_p, z_p)
+        ax_passive.plot(x_p, y_p, z_p)
 
         # Plot active state curves
         if len(curve_a_total[m][:,0]) != 2:
@@ -461,8 +447,16 @@ if __name__ == "__main__":
 
             ax_active.plot(x_a, y_a, z_a)
 
-    # surf_p = ax_passive.plot_trisurf(x_p, y_p, z_p)
-    # surf_a = ax_active.plot_trisurf(x_a, y_a, z_a)
+        if m == 0:
+            xa_square = [0, 3, 3, 0, 0]
+            ya_square = [0, 0, 0, 0, 0]
+            za_square = [0, 0, 10, 10, 0]
+            ax_active.plot(xa_square, ya_square, za_square, linewidth=4, color='r')
+
+            xp_square = [0, 0.6, 0.6, 0, 0]
+            yp_square = [0, 0, 0, 0, 0]
+            zp_square = [0, 0, 2, 2, 0]
+            ax_passive.plot(xp_square, yp_square, zp_square, linewidth=4, color='r')
 
     plt.show()
 

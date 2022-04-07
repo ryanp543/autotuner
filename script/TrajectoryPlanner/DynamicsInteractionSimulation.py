@@ -259,57 +259,98 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.grid()
     plt.xlabel("Time (s)")
 
-    fig2 = plt.figure(2, figsize=(10,22), dpi=80)
+    fig2 = plt.figure(2, figsize=(12,18), dpi=80)
+    plt.rc("font", size=20)
+    plt.subplots_adjust(left=0.15, right=0.82, top=0.95, bottom=0.1)
 
     ax = fig2.add_subplot(6, 1, 1)
+    ax.tick_params(width=2, length=8)
+    ax.xaxis.set_ticklabels([])
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.plot(t, x[:, 0], color='green')
     plt.plot(t, x_d[:, 0], color='red')
-    plt.ylabel("z (rad)") # + "\n"  + r"($10^{-2}$ rad)")
-    plt.title("Joint Position")
-    plt.legend(["Position", "Reference"])
+    plt.ylabel("z (m)") # + "\n"  + r"($10^{-2}$ rad)")
+    plt.yticks(np.arange(-0.054, -0.04, 0.004))
+    plt.ylim((-0.055, -0.045))
+    plt.legend(["Pos", "Ref"], loc='center left', bbox_to_anchor=(1, 0.5))
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 2)
+    ax.tick_params(width=2, length=8)
+    ax.xaxis.set_ticklabels([])
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.plot(t, x[:, 1], color='green')
     plt.plot(t, x_d[:, 1], color='red')
+    plt.yticks(np.arange(0.012, 0.04, 0.008))
+    plt.ylim((0.01, 0.03))
     plt.ylabel(r"$\theta$ (rad)") # + "\n" + r"($10^{-2}$ rad)")
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 3)
+    ax.tick_params(width=2, length=8)
+    ax.xaxis.set_ticklabels([])
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.plot(t, x[:, 2], color='green')
     plt.plot(t, x_d[:, 2], color='red')
     plt.ylabel(r"$\phi$ (rad)") # + "\n" + r"($10^{-3}$ rad)")
+    plt.yticks(np.arange(0.105, 0.16, 0.015))
+    plt.ylim((0.10, 0.14))
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 4)
+    ax.tick_params(width=2, length=8)
+    ax.xaxis.set_ticklabels([])
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.plot(t, x[:, 3], color='green')
     plt.plot(t, x_d[:, 3], color='red')
     plt.ylabel(r"$q_1$ (rad)")
+    plt.yticks(np.arange(-0.5, 1.0, 0.5))
+    plt.ylim((-0.6, 0.6))
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 5)
+    ax.tick_params(width=2, length=8)
+    ax.xaxis.set_ticklabels([])
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.plot(t, x[:, 4], color='green')
     plt.plot(t, x_d[:, 4], color='red')
     plt.ylabel(r"$q_2$ (rad)")
+    plt.yticks(np.arange(-3.0, -1.5, 0.5))
+    plt.ylim((-3.1, -1.9))
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 6)
+    ax.tick_params(width=2, length=8)
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.plot(t, x[:, 5], color='green')
     plt.plot(t, x_d[:, 5], color='red')
     plt.ylabel(r"$q_3$ (rad)")
+    plt.yticks(np.arange(-0.5, 1.0, 0.5))
+    plt.ylim((-0.6, 0.6))
     plt.grid()
     plt.xlabel("Time (s)")
 
 
-def plotEEResults(ee_pos_all, t):
-    fig = plt.figure(3)
+def plotEEResults(ee_pos_all, ee_d, t):
+    fig3 = plt.figure(3, figsize=(8,5), dpi=80)
+    plt.rc("font", size=15)
+    plt.subplots_adjust(left=0.17, right=0.82, top=0.9, bottom=0.15)
+
+    ax = fig3.subplots()
+    ax.tick_params(width=2, length=8)
+    plt.setp(ax.spines.values(), linewidth=2)
 
     plt.plot(t, ee_pos_all[:, 0], color='red')
     plt.plot(t, ee_pos_all[:, 1], color='green')
     plt.plot(t, ee_pos_all[:, 2], color='blue')
-    plt.legend(["x", "y", "z"])
-    plt.title("End Effector X-Y-Z Position")
+    plt.plot(t, ee_d[:, 0], color='red', linestyle='--')
+    plt.plot(t, ee_d[:, 1], color='green', linestyle='--')
+    plt.plot(t, ee_d[:, 2], color='blue', linestyle='--')
+    plt.legend(["x", "y", "z", "x_ref", "y_ref", "z_ref"], loc='center left', bbox_to_anchor=(1, 0.5))
+    # plt.title("End Effector X-Y-Z Position")
     plt.ylabel("Position (m)")
+    # plt.yticks(np.arange(-0.5, 1.0, 0.5))
+    plt.ylim((-0.4, 0.8))
     plt.xlabel("Time (s)")
     plt.grid()
 
@@ -364,26 +405,33 @@ if __name__ == "__main__":
     # x_d_row = np.asarray([-0.04927567, 0.01983959, 0.12133543, 0.05801089, -2.42606408, -0.46385972])
     # x_d = np.tile(x_d_row, (np.size(t), 1))
 
-    # final_ee_pos_des = np.asarray([0.542, -0.10475, 0.2])
+    final_ee_pos_des = np.asarray([0.542, -0.10475, 0.2])
     # x_d_row = getJointsFromEE(final_ee_pos_des)
     x_d_row1 = np.asarray([-0.05154569, 0.0281988, 0.13526193, 0.10791311, -2.09864804, -0.5133995 ])
     x_d1 = np.tile(x_d_row1, (np.size(t)/4, 1))
+    ee_d1 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
 
-    # final_ee_pos_des = np.asarray([0.542, -0.30475, 0.0])
+    final_ee_pos_des = np.asarray([0.542, -0.30475, 0.0])
     x_d_row2 = np.asarray([-0.04709601, 0.01100378, 0.10937666, -0.48056983, -2.74400775, -0.04932659])
     x_d2 = np.tile(x_d_row2, (np.size(t)/4, 1))
+    ee_d2 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
 
-    # final_ee_pos_des = np.asarray([0.542, 0.09525, 0.0])
+    final_ee_pos_des = np.asarray([0.542, 0.09525, 0.0])
     x_d_row3 = np.asarray([-0.04691053, 0.01166747, 0.10524817, 0.55467198, -2.82216396, -0.21063032])
     x_d3 = np.tile(x_d_row3, (np.size(t)/4, 1))
+    ee_d3 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
 
-    # final_ee_pos_des = np.asarray([0.742, -0.10475, 0.0])
+    final_ee_pos_des = np.asarray([0.742, -0.10475, 0.0])
     x_d_row4 = np.asarray([-0.04703881, 0.01151137, 0.10809491, 0.01199024, -2.96321981, 0.51357888])
     x_d4 = np.tile(x_d_row4, (np.size(t)/4+1, 1))
+    ee_d4 = np.tile(final_ee_pos_des, (np.size(t)/4+1, 1))
 
     # Creating x_d and dx_d over time
     x_d = np.concatenate((x_d1, x_d2, x_d3, x_d4))
     dx_d = np.zeros((np.size(t), 6))
+
+    # Create ee_des over time
+    ee_d = np.concatenate((ee_d1, ee_d2, ee_d3, ee_d4))
 
     """End generating the x_d commands"""
 
@@ -404,7 +452,7 @@ if __name__ == "__main__":
     plotJointResults(x, dx, a, da, x_d, dx_d, x_err, a_err, t)
 
     # Plot end effector position over time
-    plotEEResults(ee_positions, t)
+    plotEEResults(ee_positions, ee_d, t)
 
     with open(FILEPATH_TRAJECTORY, 'w') as myfile:
         csvwriter = csv.writer(myfile, delimiter=',')
