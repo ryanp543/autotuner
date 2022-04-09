@@ -351,7 +351,7 @@ if __name__ == "__main__":
     # plt.ylim((-0.005, 0.005))
     plt.grid()
 
-    plt.subplot(3, 1, 3)
+    plt.subplot(3, 1, 2)
     for k in range(len(t_set)):
         avg_qCr_ss = sum(qC_r_set[k][-100:len(qC_r_set[k])]) / 100
         plt.plot(t_set[k], [qC_r_set[k][g]-avg_qCr_ss for g in range(0, len(qC_r_set[k]))]) #, label=labels[k])
@@ -360,7 +360,8 @@ if __name__ == "__main__":
     plt.ylim((-0.005, 0.005))
     plt.grid()
     #plt.legend(loc='center left', bbox_to_anchor=(1,0.5), fontsize='x-small')
-    plt.subplot(3, 1, 2)
+
+    plt.subplot(3, 1, 3)
     for k in range(len(t_set)):
         avg_qCp_ss = sum(qC_p_set[k][-100:len(qC_p_set[k])]) / 100
         plt.plot(t_set[k], [qC_p_set[k][g]-avg_qCp_ss for g in range(0, len(qC_p_set[k]))]) #, label=labels[k])

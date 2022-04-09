@@ -96,11 +96,12 @@ if __name__ == "__main__":
     # [-1.0472, -2.0944, 1.000] = set 14
     # [1.0472, -3.1415, 2.094] = set 27
     # [2.0944, -3.1415, 2.094] = set 36
+    # mass: [12, 30, 66, 14, 34, 52, 16, 68, 70, 60, 24, 132]:
     num = [0, 13, 26, 35]
 
     # ADD DATA TO CSV FILE
     # Chassis angle data
-    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_chassis.csv'
+    filepath = './src/autotuner/script/SimulationData/Mass1-2kg_withZ/sim_data_chassis.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -113,13 +114,8 @@ if __name__ == "__main__":
             qC_r_set.append(data[row + 2][:])
             qC_p_set.append(data[row + 3][:])
 
-            # if row not in [18, 72, 99, 21, 24, 51, 78, 102, 105, 45]:
-            #     t_set.append(data[row][:])
-            #     qC_r_set.append(data[row+1][:])
-            #     qC_p_set.append(data[row+2][:])
-
     # Joint 1 data
-    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_joint1.csv'
+    filepath = './src/autotuner/script/SimulationData/Mass1-2kg_withZ/sim_data_joint1.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -130,12 +126,8 @@ if __name__ == "__main__":
             t1_set.append(data[row][:])
             q1_set.append(data[row + 1][:])
 
-            # if row not in [12, 48, 66, 14, 16, 34, 52, 68, 70, 30]:
-            #     t1_set.append(data[row][:])
-            #     q1_set.append(data[row+1][:])
-
     # Joint 2 data
-    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_joint2.csv'
+    filepath = './src/autotuner/script/SimulationData/Mass1-2kg_withZ/sim_data_joint2.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -146,12 +138,8 @@ if __name__ == "__main__":
             t2_set.append(data[row][:])
             q2_set.append(data[row + 1][:])
 
-            # if row not in [12, 48, 66, 14, 16, 34, 52, 68, 70, 30]:
-            #     t2_set.append(data[row][:])
-            #     q2_set.append(data[row+1][:])
-
     # Joint 3 data
-    filepath = './src/autotuner/script/SimulationData/NoneData_withZ/sim_data_joint3.csv'
+    filepath = './src/autotuner/script/SimulationData/Mass1-2kg_withZ/sim_data_joint3.csv'
     with open(filepath, 'rb') as myfile:
         csvreader = csv.reader(myfile, delimiter=',')
         data = []
@@ -161,10 +149,6 @@ if __name__ == "__main__":
         for row in range(0, len(data), 2):
             t3_set.append(data[row][:])
             q3_set.append(data[row + 1][:])
-
-            # if row not in [12, 48, 66, 14, 16, 34, 52, 68, 70, 30]:
-            #     t3_set.append(data[row][:])
-            #     q3_set.append(data[row+1][:])
 
     # CALCULATING SETTLING TIME
     averages = []
@@ -246,8 +230,8 @@ if __name__ == "__main__":
         plt.plot(t_set[k][:-500], [1000*(qC_z_set[k][g]-avg_qCz_ss) for g in range(0, len(qC_z_set[k]))][:-500]) #, label=labels[k])
     plt.ylabel(r"$z - {z}^{ref}$"+ "\n" + "(mm)")
     # plt.xlabel("Time (s)")
-    plt.yticks(np.arange(-9, 13.5, 4.5))
-    plt.ylim((-9, 9))
+    plt.yticks(np.arange(-10, 35, 10))
+    plt.ylim((-10.3, 30.3))
     plt.xticks(np.arange(0, 6, 1))
     # ax.autoscale()
     plt.grid()
@@ -263,8 +247,8 @@ if __name__ == "__main__":
         plt.plot(t_set[k][:-500], [1000*(qC_r_set[k][g]-avg_qCr_ss) for g in range(0, len(qC_r_set[k]))][:-500]) #, label=labels[k])
     plt.ylabel(r"$\phi - {\phi}^{ref}$"+ "\n" + r"($10^{-3}$ rad)")
     # plt.xlabel("Time (s)")
-    plt.yticks(np.arange(-5, 10, 2.5))
-    plt.ylim((-6, 6))
+    plt.yticks(np.arange(-20, 25, 10))
+    plt.ylim((-20.3, 20.3))
     plt.xticks(np.arange(0, 6, 1))
     # ax.autoscale()
     plt.grid()
@@ -278,8 +262,8 @@ if __name__ == "__main__":
         plt.plot(t_set[k][:-500], [100*(qC_p_set[k][g]-avg_qCp_ss) for g in range(0, len(qC_p_set[k]))][:-500]) #, label=labels[k])
     plt.ylabel(r"$\theta - {\theta}^{ref}$"+ "\n" + r"($10^{-2}$ rad)")
     plt.xlabel("Time (s)")
-    plt.yticks(np.arange(-5, 10, 2.5))
-    plt.ylim((-6, 6))
+    plt.yticks(np.arange(-15, 20, 7.5))
+    plt.ylim((-15.3, 15.3))
     plt.xticks(np.arange(0, 6, 1))
     plt.grid()
     #plt.legend(loc='center left', bbox_to_anchor=(1,0.5) , fontsize='x-small')

@@ -125,10 +125,10 @@
         <limit
         lower="-3.1415"
         upper="3.1415"
-        effort="40.0"
+        effort="16.0"
         velocity="40.0" />
         <dynamics
-        friction="0"/>
+        friction="0.09"/>
     </joint>
     <transmission name="trans_Joint_1">
         <type>transmission_interface/SimpleTransmission</type>
@@ -196,10 +196,10 @@
         <limit
         lower="-3.1415"
         upper="0"
-        effort="40.0"
+        effort="16.0"
         velocity="40.0" />
         <dynamics
-        friction="0"/>
+        friction="0.09"/>
     </joint>
     <transmission name="trans_Joint_2">
         <type>transmission_interface/SimpleTransmission</type>
@@ -267,10 +267,10 @@
         <limit
         lower="-1.0472"
         upper="2.6"
-        effort="40.0"
+        effort="16.0"
         velocity="40.0" />
         <dynamics
-        friction="0"/>
+        friction="0.09"/>
     </joint>
     <transmission name="trans_Joint_3">
         <type>transmission_interface/SimpleTransmission</type>

@@ -355,6 +355,12 @@ def plotEEResults(ee_pos_all, ee_d, t):
     plt.grid()
 
 
+def sample_spherical(npoints, ndim=3):
+    vec = np.random.randn(ndim, npoints)
+    vec /= np.linalg.norm(vec, axis=0)
+    return vec
+
+
 # Function: Main
 # Uses a least-squares optimizer to generate a trajectory path to minimize base vibrations, joint acceleration,
 # settling time, and overshoot.
@@ -386,6 +392,7 @@ if __name__ == "__main__":
     B_environment = np.asarray([[damping, 0, 0], [0, damping, 0], [0, 0, damping]])
 
     # Comment out to calculate start position from contact_pt
+    task_sphere_rad = 0.2
     contact_point = np.asarray([0.542, -0.10475, 0])
     # x_init = getJointsFromEE(contact_point)
 
@@ -399,39 +406,42 @@ if __name__ == "__main__":
     """Generating the x_d commands"""
     # Create time parameters and axis
     dt = 0.001
-    test_length = 40 # in seconds
+    test_length = 10 # in seconds
     t = np.asarray([n * dt for n in range(0, int(test_length/dt)+1)])
 
-    # x_d_row = np.asarray([-0.04927567, 0.01983959, 0.12133543, 0.05801089, -2.42606408, -0.46385972])
-    # x_d = np.tile(x_d_row, (np.size(t), 1))
+    ee_pos_all = task_sphere_rad*sample_spherical(5)
+    print(ee_pos_all)
+    print(ee_pos_all + )
+    print(np.shape(ee_pos_all))
+    quit()
 
     final_ee_pos_des = np.asarray([0.542, -0.10475, 0.2])
-    # x_d_row = getJointsFromEE(final_ee_pos_des)
-    x_d_row1 = np.asarray([-0.05154569, 0.0281988, 0.13526193, 0.10791311, -2.09864804, -0.5133995 ])
-    x_d1 = np.tile(x_d_row1, (np.size(t)/4, 1))
-    ee_d1 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
+    x_d_row = getJointsFromEE(final_ee_pos_des)
+    # x_d_row = np.asarray([-0.05154569, 0.0281988, 0.13526193, 0.10791311, -2.09864804, -0.5133995 ])
+    x_d = np.tile(x_d_row, (np.size(t), 1))
+    ee_d = np.tile(final_ee_pos_des, (np.size(t), 1))
 
-    final_ee_pos_des = np.asarray([0.542, -0.30475, 0.0])
-    x_d_row2 = np.asarray([-0.04709601, 0.01100378, 0.10937666, -0.48056983, -2.74400775, -0.04932659])
-    x_d2 = np.tile(x_d_row2, (np.size(t)/4, 1))
-    ee_d2 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
-
-    final_ee_pos_des = np.asarray([0.542, 0.09525, 0.0])
-    x_d_row3 = np.asarray([-0.04691053, 0.01166747, 0.10524817, 0.55467198, -2.82216396, -0.21063032])
-    x_d3 = np.tile(x_d_row3, (np.size(t)/4, 1))
-    ee_d3 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
-
-    final_ee_pos_des = np.asarray([0.742, -0.10475, 0.0])
-    x_d_row4 = np.asarray([-0.04703881, 0.01151137, 0.10809491, 0.01199024, -2.96321981, 0.51357888])
-    x_d4 = np.tile(x_d_row4, (np.size(t)/4+1, 1))
-    ee_d4 = np.tile(final_ee_pos_des, (np.size(t)/4+1, 1))
+    # final_ee_pos_des = np.asarray([0.542, -0.30475, 0.0])
+    # x_d_row2 = np.asarray([-0.04709601, 0.01100378, 0.10937666, -0.48056983, -2.74400775, -0.04932659])
+    # x_d2 = np.tile(x_d_row2, (np.size(t)/4, 1))
+    # ee_d2 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
+    #
+    # final_ee_pos_des = np.asarray([0.542, 0.09525, 0.0])
+    # x_d_row3 = np.asarray([-0.04691053, 0.01166747, 0.10524817, 0.55467198, -2.82216396, -0.21063032])
+    # x_d3 = np.tile(x_d_row3, (np.size(t)/4, 1))
+    # ee_d3 = np.tile(final_ee_pos_des, (np.size(t)/4, 1))
+    #
+    # final_ee_pos_des = np.asarray([0.742, -0.10475, 0.0])
+    # x_d_row4 = np.asarray([-0.04703881, 0.01151137, 0.10809491, 0.01199024, -2.96321981, 0.51357888])
+    # x_d4 = np.tile(x_d_row4, (np.size(t)/4+1, 1))
+    # ee_d4 = np.tile(final_ee_pos_des, (np.size(t)/4+1, 1))
 
     # Creating x_d and dx_d over time
-    x_d = np.concatenate((x_d1, x_d2, x_d3, x_d4))
+    # x_d = np.concatenate((x_d1, x_d2, x_d3, x_d4))
     dx_d = np.zeros((np.size(t), 6))
 
     # Create ee_des over time
-    ee_d = np.concatenate((ee_d1, ee_d2, ee_d3, ee_d4))
+    # ee_d = np.concatenate((ee_d1, ee_d2, ee_d3, ee_d4))
 
     """End generating the x_d commands"""
 
@@ -454,11 +464,11 @@ if __name__ == "__main__":
     # Plot end effector position over time
     plotEEResults(ee_positions, ee_d, t)
 
-    with open(FILEPATH_TRAJECTORY, 'w') as myfile:
-        csvwriter = csv.writer(myfile, delimiter=',')
-        csvwriter.writerow([dt, test_length])
-
-        for j in range(np.shape(x)[0]):
-            csvwriter.writerow(x[j, :])
+    # with open(FILEPATH_TRAJECTORY, 'w') as myfile:
+    #     csvwriter = csv.writer(myfile, delimiter=',')
+    #     csvwriter.writerow([dt, test_length])
+    #
+    #     for j in range(np.shape(x)[0]):
+    #         csvwriter.writerow(x[j, :])
 
     plt.show()
