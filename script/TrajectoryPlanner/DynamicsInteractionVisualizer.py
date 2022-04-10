@@ -26,7 +26,7 @@ from mpl_toolkits.mplot3d import Axes3D, proj3d
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-FILEPATH_TRAJECTORY = './DynamicsInteractionTrajectory_interact.csv'
+FILEPATH_TRAJECTORY = './DynamicsInteractionTrajectory_errors.csv'
 
 
 class Arrow3D(FancyArrowPatch):
@@ -187,6 +187,71 @@ def init():
     return sus_arrows[0], sus_arrows[1], sus_arrows[2], sus_arrows[3], collection, line, time_text, ee_arrow
 
 
+def plotJointErrors(x_err, dt, test_length):
+    # Plot errors of all motors and passive joints
+    t = np.asarray([n * dt for n in range(0, int(test_length / dt))])
+    num_tests = int(np.shape(x_err)[0] / len(t))
+
+    fig2 = plt.figure(2, figsize=(10,22), dpi=80)
+    plt.rc("font", size=20)
+
+    ax2 = fig2.add_subplot(6, 1, 1)
+    ax2.tick_params(width=2, length=8)
+    ax2.xaxis.set_ticklabels([])
+    plt.setp(ax2.spines.values(), linewidth=2)
+    for k in range(0, num_tests):
+        plt.plot(t, x_err[k*len(t):(k+1)*len(t), 0])
+    plt.ylabel(r"$z - {z}^{ref}$" + "\n(m)") # + "\n"  + r"($10^{-2}$ rad)")
+    plt.grid()
+
+    ax2 = fig2.add_subplot(6, 1, 2)
+    ax2.tick_params(width=2, length=8)
+    ax2.xaxis.set_ticklabels([])
+    plt.setp(ax2.spines.values(), linewidth=2)
+    for k in range(0, num_tests):
+        plt.plot(t, x_err[k*len(t):(k+1)*len(t), 1])
+    plt.ylabel(r"$\theta - {\theta}^{ref}$" + "\n(rad)") # + "\n" + r"($10^{-2}$ rad)")
+    plt.grid()
+
+    ax2 = fig2.add_subplot(6, 1, 3)
+    ax2.tick_params(width=2, length=8)
+    ax2.xaxis.set_ticklabels([])
+    plt.setp(ax2.spines.values(), linewidth=2)
+    for k in range(0, num_tests):
+        plt.plot(t, x_err[k*len(t):(k+1)*len(t), 2])
+    plt.ylabel(r"$\phi - {\phi}^{ref}$" + "\n(rad)") # + "\n" + r"($10^{-3}$ rad)")
+    plt.grid()
+
+    ax2 = fig2.add_subplot(6, 1, 4)
+    ax2.tick_params(width=2, length=8)
+    ax2.xaxis.set_ticklabels([])
+    plt.setp(ax2.spines.values(), linewidth=2)
+    for k in range(0, num_tests):
+        plt.plot(t, x_err[k*len(t):(k+1)*len(t), 3])
+    plt.ylabel(r"$q_1 - {q_1}^{ref}$" + "\n(rad)")
+    plt.grid()
+
+    ax2 = fig2.add_subplot(6, 1, 5)
+    ax2.tick_params(width=2, length=8)
+    ax2.xaxis.set_ticklabels([])
+    plt.setp(ax2.spines.values(), linewidth=2)
+    for k in range(0, num_tests):
+        plt.plot(t, x_err[k*len(t):(k+1)*len(t), 4])
+    plt.ylabel(r"$q_2 - {q_2}^{ref}$" + "\n(rad)")
+    plt.grid()
+
+    ax2 = fig2.add_subplot(6, 1, 6)
+    ax2.tick_params(width=2, length=8)
+    plt.setp(ax2.spines.values(), linewidth=2)
+    for k in range(0, num_tests):
+        plt.plot(t, x_err[k*len(t):(k+1)*len(t), 5])
+    plt.ylabel(r"$q_3 - {q_3}^{ref}$" + "\n(rad)")
+    plt.grid()
+    plt.xlabel("Time (s)")
+
+    fig2.align_labels()
+
+
 if __name__ == "__main__":
     world = klampt.WorldModel()
     res = world.readFile("./robot_sim.xml")
@@ -271,5 +336,8 @@ if __name__ == "__main__":
     # Creating the Animation object fargs=(data, lines)
     line_ani = animation.FuncAnimation(fig, animate, frames=2001, interval=1, blit=True, init_func=init, repeat=False)
     # line_ani.save('animation.mp4', fps=30)
+
+    # Plot joint errors
+    # plotJointErrors(x, dt, test_length)
 
     plt.show()

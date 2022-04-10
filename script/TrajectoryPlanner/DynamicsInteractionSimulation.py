@@ -218,11 +218,6 @@ def calculateEndEffectorPosition(x):
     return ee_pos_all
 
 
-def calculateEnergy(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, KP, KI, KD, alpha):
-    s = np.add(dx, alpha*x_err)
-    print(np.shape(s))
-
-
 def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     # Plot errors of all motors and passive joints
     fig = plt.figure(1, figsize=(10,22), dpi=80)
@@ -270,8 +265,8 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.plot(t, x[:, 0], color='green')
     plt.plot(t, x_d[:, 0], color='red')
     plt.ylabel("z (m)") # + "\n"  + r"($10^{-2}$ rad)")
-    plt.yticks(np.arange(-0.054, -0.04, 0.004))
-    plt.ylim((-0.055, -0.045))
+    # plt.yticks(np.arange(-0.054, -0.04, 0.004))
+    # plt.ylim((-0.055, -0.045))
     plt.legend(["Pos", "Ref"], loc='center left', bbox_to_anchor=(1, 0.5))
     plt.grid()
 
@@ -281,8 +276,8 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.setp(ax.spines.values(), linewidth=2)
     plt.plot(t, x[:, 1], color='green')
     plt.plot(t, x_d[:, 1], color='red')
-    plt.yticks(np.arange(0.012, 0.04, 0.008))
-    plt.ylim((0.01, 0.03))
+    # plt.yticks(np.arange(0.012, 0.04, 0.008))
+    # plt.ylim((0.01, 0.03))
     plt.ylabel(r"$\theta$ (rad)") # + "\n" + r"($10^{-2}$ rad)")
     plt.grid()
 
@@ -293,8 +288,8 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.plot(t, x[:, 2], color='green')
     plt.plot(t, x_d[:, 2], color='red')
     plt.ylabel(r"$\phi$ (rad)") # + "\n" + r"($10^{-3}$ rad)")
-    plt.yticks(np.arange(0.105, 0.16, 0.015))
-    plt.ylim((0.10, 0.14))
+    # plt.yticks(np.arange(0.105, 0.16, 0.015))
+    # plt.ylim((0.10, 0.14))
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 4)
@@ -304,8 +299,8 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.plot(t, x[:, 3], color='green')
     plt.plot(t, x_d[:, 3], color='red')
     plt.ylabel(r"$q_1$ (rad)")
-    plt.yticks(np.arange(-0.5, 1.0, 0.5))
-    plt.ylim((-0.6, 0.6))
+    # plt.yticks(np.arange(-0.5, 1.0, 0.5))
+    # plt.ylim((-0.6, 0.6))
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 5)
@@ -315,8 +310,8 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.plot(t, x[:, 4], color='green')
     plt.plot(t, x_d[:, 4], color='red')
     plt.ylabel(r"$q_2$ (rad)")
-    plt.yticks(np.arange(-3.0, -1.5, 0.5))
-    plt.ylim((-3.1, -1.9))
+    # plt.yticks(np.arange(-3.0, -1.5, 0.5))
+    # plt.ylim((-3.1, -1.9))
     plt.grid()
 
     ax = fig2.add_subplot(6, 1, 6)
@@ -325,8 +320,8 @@ def plotJointResults(x, dx, a_hat, da_hat, x_d, dx_d, x_err, a_err, t):
     plt.plot(t, x[:, 5], color='green')
     plt.plot(t, x_d[:, 5], color='red')
     plt.ylabel(r"$q_3$ (rad)")
-    plt.yticks(np.arange(-0.5, 1.0, 0.5))
-    plt.ylim((-0.6, 0.6))
+    # plt.yticks(np.arange(-0.5, 1.0, 0.5))
+    # plt.ylim((-0.6, 0.6))
     plt.grid()
     plt.xlabel("Time (s)")
 
@@ -350,7 +345,7 @@ def plotEEResults(ee_pos_all, ee_d, t):
     # plt.title("End Effector X-Y-Z Position")
     plt.ylabel("Position (m)")
     # plt.yticks(np.arange(-0.5, 1.0, 0.5))
-    plt.ylim((-0.4, 0.8))
+    #  plt.ylim((-0.4, 0.8))
     plt.xlabel("Time (s)")
     plt.grid()
 
@@ -407,19 +402,23 @@ if __name__ == "__main__":
     # Create time parameters and axis
     dt = 0.001
     test_length = 10 # in seconds
-    t = np.asarray([n * dt for n in range(0, int(test_length/dt)+1)])
 
-    ee_pos_all = task_sphere_rad*sample_spherical(5)
+    num_final_pos = 1
+    ee_pos_all = (task_sphere_rad*sample_spherical(num_final_pos)) + contact_point[:, None]
     print(ee_pos_all)
-    print(ee_pos_all + )
-    print(np.shape(ee_pos_all))
-    quit()
 
-    final_ee_pos_des = np.asarray([0.542, -0.10475, 0.2])
+    t = np.asarray([n * dt for n in range(0, int(test_length*num_final_pos/dt))])
+
+    final_ee_pos_des = ee_pos_all[:, 0]
     x_d_row = getJointsFromEE(final_ee_pos_des)
-    # x_d_row = np.asarray([-0.05154569, 0.0281988, 0.13526193, 0.10791311, -2.09864804, -0.5133995 ])
-    x_d = np.tile(x_d_row, (np.size(t), 1))
+    x_d = np.tile(x_d_row, (int(test_length/dt), 1))
     ee_d = np.tile(final_ee_pos_des, (np.size(t), 1))
+
+    # final_ee_pos_des = np.asarray([0.542, -0.10475, 0.2])
+    # x_d_row = getJointsFromEE(final_ee_pos_des)
+    # x_d_row = np.asarray([-0.05154569, 0.0281988, 0.13526193, 0.10791311, -2.09864804, -0.5133995 ])
+    # x_d = np.tile(x_d_row, (np.size(t), 1))
+    # ee_d = np.tile(final_ee_pos_des, (np.size(t), 1))
 
     # final_ee_pos_des = np.asarray([0.542, -0.30475, 0.0])
     # x_d_row2 = np.asarray([-0.04709601, 0.01100378, 0.10937666, -0.48056983, -2.74400775, -0.04932659])
@@ -455,20 +454,20 @@ if __name__ == "__main__":
     # Calculate end effector position x, y, z
     ee_positions = calculateEndEffectorPosition(x)
 
-    # Calculate energy and energy derivative, V and V_dot
-    # calculateEnergy(x, dx, a, da, x_d, dx_d, x_err, a_err, KP, KI, KD, alpha)
-
     # Plot joint positions over time
     plotJointResults(x, dx, a, da, x_d, dx_d, x_err, a_err, t)
 
     # Plot end effector position over time
     plotEEResults(ee_positions, ee_d, t)
 
-    # with open(FILEPATH_TRAJECTORY, 'w') as myfile:
-    #     csvwriter = csv.writer(myfile, delimiter=',')
-    #     csvwriter.writerow([dt, test_length])
-    #
-    #     for j in range(np.shape(x)[0]):
-    #         csvwriter.writerow(x[j, :])
-
     plt.show()
+
+    print(np.shape(x))
+    with open(FILEPATH_TRAJECTORY, 'w') as myfile:
+        csvwriter = csv.writer(myfile, delimiter=',')
+        csvwriter.writerow([dt, test_length])
+
+        for j in range(np.shape(x)[0]):
+            csvwriter.writerow(x[j, :])
+
+    print("Added to .csv file.")
