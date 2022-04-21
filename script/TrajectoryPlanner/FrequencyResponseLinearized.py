@@ -77,11 +77,11 @@ if __name__ == "__main__":
 
     freq = np.logspace(-1, 2, num=10000)
 
-    fig = plt.figure(1, figsize=(12, 14), dpi=80)
+    fig = plt.figure(1, figsize=(10, 14), dpi=80)
     plt.subplots_adjust(top=0.95, bottom=0.1)
     plt.rc("font", size=15)
 
-    fig2 = plt.figure(2, figsize=(12, 14), dpi=80)
+    fig2 = plt.figure(2, figsize=(10, 14), dpi=80)
     plt.subplots_adjust(top=0.95, bottom=0.1)
     plt.rc("font", size=15)
 
@@ -178,11 +178,17 @@ if __name__ == "__main__":
         plt.xlabel("Frequency (Hz)")
 
 
-    fig.align_labels()
 
+    plt.figure(1)
     plt.sca(ax[0])
     fraction_str = [str(elem) for elem in fraction]
     plt.legend(fraction_str, title="Damping Fraction")
+    fig.align_labels()
+
+    plt.figure(2)
+    plt.sca(ax2[0])
+    plt.legend(fraction_str, title="Damping Fraction")
+    fig2.align_labels()
 
     plt.show()
 
