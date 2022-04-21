@@ -1,4 +1,4 @@
-# RAPID Tuning Procedure
+# RaPID Tuning Procedure
 
 ## Flexible-Base Manipulator Control Autotuner
 
