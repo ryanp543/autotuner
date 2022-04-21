@@ -75,6 +75,24 @@ if __name__ == "__main__":
     zero = np.zeros((3, 3))
     I = np.identity(3)
 
+    # Calculate natural frequencies and mode shapes:
+    M_top = np.concatenate((I, zero), axis=1)
+    M_bot = np.concatenate((zero, H), axis=1)
+    M = np.concatenate((M_top, M_bot), axis=0)
+
+    D_top = np.concatenate((zero, -I), axis=1)
+    D_bot = np.concatenate((Ks, 0 * (C + Bs)), axis=1)
+    D = np.concatenate((D_top, D_bot), axis=0)
+
+    A = np.dot(np.linalg.inv(H), Ks)
+    eigval, eigvec = np.linalg.eig(A)
+    nat_freq = np.sqrt(eigval) / (2 * np.pi)
+    print("Undamped Natural Frequencies: " + np.array2string(nat_freq))
+    print("Mode shape 1: " + np.array2string(eigvec[0]))
+    print("Mode shape 2: " + np.array2string(eigvec[1]))
+    print("Mode shape 3: " + np.array2string(eigvec[2]))
+
+    # Prepare plots
     freq = np.logspace(-1, 2, num=10000)
 
     fig = plt.figure(1, figsize=(10, 14), dpi=80)
@@ -114,7 +132,7 @@ if __name__ == "__main__":
         plt.setp(ax_sub.spines.values(), linewidth=2)
         plt.grid()
 
-
+    # Calculate amplitude and phase and frequency response plots
     fraction = [0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 1]
     for frac in fraction:
 
